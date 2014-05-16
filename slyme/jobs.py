@@ -68,7 +68,98 @@ class JobReport(object):
     End
       The End is converted to a python datetime
       
+    State
+      Mostly this is left as is with the exception of "CANCELLED by <uid>" entries
+      The uid is parsed out and moved to the CancelledBy field
+      
+    MaxRSS
+      This is converted to a kilobyte value and stored in MaxRSS_kB.  The JobReport
+      iterates through the JobSteps and returns the largest value.
+      
+    CPUTime,UserCPU,SystemCPU,TotalCPU
+      These values are converted to seconds from the text representation.  Values
+      may include decimals
+      
     '''
+    
+    keys = [
+        #=== data from sacct
+
+        #--- info from main job account line
+
+        'JobID',
+        #str, but currently always representing an integer (no ".STEP_ID")
+        
+        'User',
+        #str
+        
+        'JobName',
+        #str
+        
+        'State',
+        #str
+        
+        'Partition',
+        #str
+        
+        'NCPUS',
+        #int
+        
+        'NNodes',
+        #int
+
+        'CPUTime',
+        #seconds, float
+        
+        'TotalCPU',
+        #seconds, float
+        
+        'UserCPU',
+        #seconds, float
+        
+        'SystemCPU',
+        #seconds, float
+
+        #--- max of any main job account line or any steps
+
+        'MaxRSS_kB',
+        #bytes in kB, int
+        
+        'ReqMem_bytes_per_node',
+        #bytes, int, or None if not used
+        
+        'ReqMem_bytes_per_core',
+        #bytes, int, or None if not used
+
+        'ReqMem_bytes',
+        #bytes, int, or None if not used
+        
+        'Start',
+        #Start time 
+        
+        'End',
+        #End time
+        
+        'NodeList',
+        #List of nodes used
+
+        #=== derived data
+
+        'ReqMem_bytes_total',
+        #bytes, int, or None if not used
+        #a computation combining the appropriate request per resource and number of resources
+
+        'CPU_Efficiency',
+        #float, should be in the range [0.0,1.0), but nothing guarantees that
+        
+        'CPU_Wasted',
+        #seconds, float
+        
+        'CancelledBy',
+        #If State is CANCELLED by (uid), this is the uid
+
+    ]
+    
     @classmethod
     def fetch(cls,**kwargs):
         factory = SacctFactory()
@@ -87,40 +178,81 @@ class JobReport(object):
         """
         __getattr__ just calls __getitem__ 
         """
-        return self.__getitem__(name)
+        if name in JobReport.keys:            
+            return self.get_value_for_index(name)
+        else:
+            # Gotta do this for getattr calls that are looking
+            # for methods, etc.
+            return super(JobReport,self).__getattribute__(name)
     
     
     def __getitem__(self, index):
         '''
         Get the value from the correct JobStep
-        '''
-        logger.debug("Getting %s from JobReport" % index)
-        logger.debug("Using %d jobsteps" % len(self.jobsteps))
+        '''        
+        return self.get_value_for_index(index)
         
-        
+    
+    def get_value_for_index(self,index):
         # If no jobsteps return None
         if self.jobsteps is None or len(self.jobsteps) == 0:
             logger.debug("No job steps")
             return None
         
-        if index == 'JobName':
-            for js in self.jobsteps:
-                if js.JobName and js.JobName != 'batch':
-                    return js.JobName
-        elif index == 'MaxRSS_kB':
-            max = -1
-            for js in self.jobsteps:
-                if js.MaxRSS_kB > max:
-                    max = js.MaxRSS_kB
-            return max
-        else:
-            # Return the first non-null thing you find
-            for js in self.jobsteps:
-                logger.debug("Checking jobstep against index %s" % index)
-                if js[index] is not None and js[index] != '':
-                    logger.debug("Got %s" % index)
-                    return js[index]
+        # We can cache values for large JobStep arrays
+        if index in self.__dict__:
+            return __dict__[index]
+        
+        # If there is a getter function, use it
+        funcname = "get_%s" % index
+        try:            
+            f =  getattr(self,funcname)            
+            if callable(f):
+                return f()
+        except AttributeError:
+            pass
+        
+        # Return the first non-null thing you find
+        for js in self.jobsteps:
+            logger.debug("Checking jobstep against index %s" % index)
+            if js[index] is not None and js[index] != '':
+                logger.debug("Got %s" % index)
+                return js[index]
+                
+                
+    def get_JobName(self):
+        for js in self.jobsteps:
+            if js.JobName and js.JobName != 'batch':
+                return js.JobName
+            
+    def get_MaxRSS_kB(self):
+        """
+        Gets the max value from the jobsteps
+        """
+        max = -1
+        for js in self.jobsteps:
+            if js.MaxRSS_kB > max:
+                max = js.MaxRSS_kB
+        return max
     
+    def get_NCPUS(self):
+        """
+        Gets the max value from the jobsteps
+        """
+        max = 0
+        for js in self.jobsteps:
+            if js.NCPUS > max:
+                max = js.NCPUS
+        return max
+    
+    def get_CPUTime(self):
+        """
+        Sums the CPUTime of the individual job steps
+        """
+        cputime = 0
+        for js in self.jobsteps:
+            cputime += js.CPUTime
+        return cputime
         
 
 class SacctFactory(object):

@@ -27,7 +27,6 @@ class FakeRunSh:
             yield line
     
 
-currentrunsh = None
 
 class Test(unittest.TestCase):
         
@@ -36,6 +35,27 @@ class Test(unittest.TestCase):
     
     def tearDown(self):
         pass
+    
+    def test_MPIJobReportParsing(self):
+        #JobID,User,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList
+        text="""
+10812627|akitzmiller|dusagetest.sbatch|COMPLETED|general|8|1|00:17:36|00:55.225|00:47.644|00:07.580|200Mc||2014-05-16T13:36:40|2014-05-16T13:38:52|holy2a09303
+10812627.batch||batch|COMPLETED||1|1|00:02:12|00:55.225|00:47.644|00:07.580|200Mc|64100K|2014-05-16T13:36:40|2014-05-16T13:38:52|holy2a09303
+"""
+        currentrunsh = FakeRunSh(text)
+        
+        jobreports = JobReport.fetch(execfunc = currentrunsh.runsh_i)
+        
+        # *** Test for JobReport with single JobStep (10048462 is an interactive job) ***
+        jr = jobreports.next()
+        
+        self.assertEqual(jr.JobID, '10812627', "Incorrect JobID %s" % jr.JobID)
+        
+        # NCPUS should be the max
+        self.assertEqual(jr.NCPUS, 8, "Incorrect NCPUS %d" % jr.NCPUS)
+        # CPUTime should be the sum
+        self.assertEqual(jr.CPUTime, 1188, "Incorrect CPUTime %d" % jr.CPUTime)
+        
 
     def test_JobReportParsing(self):  
         """
@@ -85,15 +105,33 @@ class Test(unittest.TestCase):
         self.assertEqual(jr.End.hour, 13, "Incorrect End.hour %s" % jr.End.hour)
         self.assertEqual(jr.NodeList, "holy2a18206", "Incorrect NodeList %s" % jr.NodeList)
         
+        # CANCELLED state parsing
         self.assertEqual(jr.State, "CANCELLED", "Incorrect State %s" % jr.State)
         self.assertEqual(jr.CancelledBy, "0", "Incorrect CancelledBy %s" % jr.CancelledBy)
         
-        # TODO: Time elements.  These should probably be converted to seconds
+        # Time elements
+        self.assertEqual(jr.CPUTime, 7713, "Incorrect CPUTime %d" % jr.CPUTime)
+        self.assertEqual(jr.TotalCPU, 481.433, "Incorrect TotalCPU %s" % jr.TotalCPU)
+        self.assertEqual(jr.UserCPU, 407.955, "Incorrect TotalCPU %s" % jr.UserCPU)
+        self.assertEqual(jr.SystemCPU, 73.477, "Incorrect TotalCPU %s" % jr.SystemCPU)
+        
+        
+        jobreports.next()
+        
+        # *** Test for JobReport where job was cancelled before it could start
+        jr = jobreports.next()
+        self.assertEqual(jr.State, "CANCELLED", "Incorrect State %s" % jr.State)
+        self.assertEqual(jr.CancelledBy, "100278", "Incorrect CancelledBy %s" % jr.CancelledBy)
+        self.assertEqual(jr.NCPUS, 0, "Incorrect NCPUS %s" % jr.NCPUS)
+        self.assertEqual(jr.CPUTime, 0, "Incorrect CPUTime %d" % jr.CPUTime)
+        self.assertEqual(jr.TotalCPU, 0, "Incorrect TotalCPU %s" % jr.TotalCPU)
+        self.assertEqual(jr.UserCPU, 0, "Incorrect TotalCPU %s" % jr.UserCPU)
+        self.assertEqual(jr.SystemCPU, 0, "Incorrect TotalCPU %s" % jr.SystemCPU)
+        self.assertEqual(jr.NodeList, "None assigned", "Incorrect NodeList %s" % jr.NodeList)
+       
         
         
         # *** Test for JobReport with typical two JobStep batch form ***
-        jobreports.next()
-        jobreports.next()
         jr = jobreports.next()
         
         # Check JobID
