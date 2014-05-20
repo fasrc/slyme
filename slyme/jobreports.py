@@ -346,7 +346,8 @@ class SacctFactory(object):
                         continue
     
                     JobID,User,JobName,State,Partition,NCPUS,NNodes,CPUTime,\
-                        TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList = line.split('|')
+                        TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,\
+                        NodeList,Elapsed = line.split('|')
                     logger.debug("User %s, JobID %s" % (User,JobID))
                     
                     # Convert JobID to just the base id, and set an extra 
@@ -386,6 +387,7 @@ class SacctFactory(object):
                     j.TotalCPU      = slurmtime_to_seconds(TotalCPU)
                     j.UserCPU       = slurmtime_to_seconds(UserCPU)
                     j.SystemCPU     = slurmtime_to_seconds(SystemCPU)
+                    j.Elapsed       = slurmtime_to_seconds(Elapsed)
                     
                     starttime = None
                     if Start:
