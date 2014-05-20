@@ -300,7 +300,7 @@ class SacctFactory(object):
                 
                 # If it's a boolean, just take the key
                 if key in boolean:
-                    shv.extend('--%s' % key)
+                    shv.extend(['--%s' % key])
                 else:
                     shv.extend(['--%s' % key, value])
                             
@@ -390,7 +390,7 @@ class SacctFactory(object):
                     j.Elapsed       = slurmtime_to_seconds(Elapsed)
                     
                     starttime = None
-                    if Start:
+                    if Start and Start != 'Unknown':
                         starttime = datetime.strptime(Start,"%Y-%m-%dT%H:%M:%S")
                     j.Start         = starttime
                     
@@ -404,6 +404,8 @@ class SacctFactory(object):
                     #these are the job steps after the main entry
 
                     #ReqMem
+                    j.ReqMem_bytes = 0
+
                     if ReqMem.endswith('Mn'):
                         ReqMem_bytes_per_node = int(ReqMem[:-2])*1024**2
                         j.ReqMem_bytes_per_node = ReqMem_bytes_per_node
