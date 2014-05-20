@@ -68,6 +68,7 @@ class Test(unittest.TestCase):
 10058675|akitzmiller|bash|CANCELLED by 100278|bigmem|0|2|00:00:00|00:00:00|00:00:00|00:00:00|300000Mn||2014-05-01T17:26:17|2014-05-01T17:26:17|None assigned
 10101624|akitzmiller|agalmatest.sbatch|FAILED|bigmem|8|1|00:30:08|03:37.192|02:57.685|00:39.506|300000Mn||2014-05-04T10:34:55|2014-05-04T10:38:41|holybigmem08
 10101624.batch||batch|FAILED||1|1|00:03:46|03:37.192|02:57.685|00:39.506|300000Mn|2407896K|2014-05-04T10:34:55|2014-05-04T10:38:41|holybigmem08
+10897512|akitzmiller|bash|RUNNING|interact|1|1|02:04:34|00:00:00|00:00:00|00:00:00|1000Mn|0|2014-05-20T09:24:43|Unknown|holy2a18208
 10102688|akitzmiller|dusage.sbatch|FAILED|general|4|1|00:01:12|00:00.367|00:00.103|00:00.263|1000Mc||2014-05-02T10:53:11|2014-05-02T10:53:29|holy2a02102
 10102688.batch||batch|FAILED||1|1|00:00:18|00:00.367|00:00.103|00:00.263|1000Mc|4260K|2014-05-02T10:53:11|2014-05-02T10:53:29|holy2a02102
 10102746|akitzmiller|dusage.sbatch|FAILED|general|4|1|00:00:16|00:00.232|00:00.089|00:00.142|1000Mc||2014-05-02T11:01:08|2014-05-02T11:01:12|holy2a05206
@@ -127,8 +128,7 @@ class Test(unittest.TestCase):
         self.assertEqual(jr.TotalCPU, 0, "Incorrect TotalCPU %s" % jr.TotalCPU)
         self.assertEqual(jr.UserCPU, 0, "Incorrect TotalCPU %s" % jr.UserCPU)
         self.assertEqual(jr.SystemCPU, 0, "Incorrect TotalCPU %s" % jr.SystemCPU)
-        self.assertEqual(jr.NodeList, "None assigned", "Incorrect NodeList %s" % jr.NodeList)
-       
+        self.assertEqual(jr.NodeList, "None assigned", "Incorrect NodeList %s" % jr.NodeList)   
         
         
         # *** Test for JobReport with typical two JobStep batch form ***
@@ -142,6 +142,14 @@ class Test(unittest.TestCase):
         self.assertEqual(jr.Partition, 'bigmem', "Incorrect Partition %s" % jr.Partition)
         # MaxRSS should not be null
         self.assertEqual(jr.MaxRSS_kB, 2407896, "Incorrect MaxRSS_kB %s" % jr.MaxRSS_kB)
+
+
+        # *** Test for interactive job that hasn't finished yet ***
+        jr = jobreports.next()
+        
+        # Check JobID
+        self.assertEqual(jr.JobID, '10897512', "Incorrect JobID %s" % jr.JobID)
+        self.assertEqual(jr.End, None, "Incorrect End.hour %s" % jr.End)
        
         #for jobreport in jobreports:
             #print("JobID is %s" % jobreport["JobID"])

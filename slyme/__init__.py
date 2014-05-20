@@ -12,3 +12,4 @@ slyme package
 '''
 from config import SlurmConfig
 from jobs import *
+from jobreports import *
