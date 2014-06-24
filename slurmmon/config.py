@@ -78,7 +78,7 @@ def get_job_script(JobID):
 	else:
 		raise NotImplementedError("job script retrieval requires implementation in config.py")
 
-def job_script_line_is_interesting(line, job=None):
+def job_script_line_is_interesting(line):
 	"""Return whether or not the line of text is worthwhile as a job script preview.
 	
 	The given line will be stripped of leading and trailing whitespace and will 

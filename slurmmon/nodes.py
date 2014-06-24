@@ -7,10 +7,10 @@
 
 import socket
 import slurmmon
-from slurmmon import config, util
+from slurmmon import config, util, lazydict
 
 
-class Node(util.LazyDict):
+class Node(lazydict.LazyDict):
 	"""a representation of a slurm compute node, mainly in scontrol context
 
 	This is dict-like.

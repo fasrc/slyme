@@ -69,7 +69,7 @@ def AllocMem_to_kB(AllocMem):
 	except (ValueError,TypeError):
 		raise Exception("un-parsable MaxRSS [%r]" % MaxRSS)
 
-def job_script_preview(JobScript, job=None):
+def job_script_preview(JobScript):
 	"""Return a representative line from the JobScript.
 	
 	This may return the empty string.
@@ -80,7 +80,7 @@ def job_script_preview(JobScript, job=None):
 		txt, line = [ s.strip() for s in txt.rsplit('\n',1) ]
 		if line=='' or line.startswith('#'):
 			continue
-		if config.job_script_line_is_interesting(line, job):
+		if config.job_script_line_is_interesting(line):
 			return line
 	return line
 

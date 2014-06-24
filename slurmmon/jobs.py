@@ -7,7 +7,7 @@
 
 import sys
 import slurmmon
-from slurmmon import config, util
+from slurmmon import config, util, lazydict
 
 
 #sacct format; you can change _sacct_format_readable at will, but changing _sacct_format_parsable will break the code
@@ -17,7 +17,52 @@ _sacct_format_readable = 'User%-12,JobID%-15,JobName%20,State,Partition%18,NCPUS
 
 #--- data structures
 
-class Job(util.LazyDict):
+class x_ReqMem_bytes_total_from_per_core(lazydict.Extension):
+	source = ('ReqMem_bytes_per_core', 'NCPUS',)
+	target = ('ReqMem_bytes_total')
+	def __call__(self, ReqMem_bytes_per_core, NCPUS):
+		return ReqMem_bytes_per_core * NCPUS,
+
+class x_ReqMem_bytes_total_from_per_core(lazydict.Extension):
+	source = ('ReqMem_bytes_per_node', 'NNodes',)
+	target = ('ReqMem_bytes_total')
+	def __call__(self, ReqMem_bytes_per_node, NNodes):
+		return ReqMem_bytes_per_node * NNodes,
+
+class x_CPU_Efficiency(lazydict.Extension):
+	source = ('TotalCPU', 'CPUTime',)
+	target = ('CPU_Efficiency',)
+	def __call__(self, TotalCPU, CPUTime):
+		if TotalCPU != 0 and CPUTime != 0:
+			return float(TotalCPU)/CPUTime,
+		return None,
+
+class x_CPU_Wasted(lazydict.Extension):
+	source = ('TotalCPU', 'CPUTime',)
+	target = ('CPU_Wasted',)
+	def __call__(self, TotalCPU, CPUTime):
+		return max(self['CPUTime'] - self['TotalCPU'], 0),
+
+class x_JobScript(lazydict.Extension):
+	source= ('JobID',)
+	target = ('JobScript',)
+	def __call__(self, JobID):
+		return config.get_job_script(self['JobID']),
+
+class x_JobScriptPreview(lazydict.Extension):
+	source = ('JobScript',)
+	target = ('JobScriptPreview',)
+	def __call__(self, JobScript):
+		return slurmmon.job_script_preview(JobScript, self),
+
+class x_SacctReport(lazydict.Extension):
+	source= ('JobID',)
+	target = ('SacctReport',)
+	def __call__(self, JobID):
+		shv = ['sacct', '--format', _sacct_format_readable, '-j', self['JobID']]
+		return util.runsh(shv).rstrip(),
+
+class Job(lazydict.LazyDict):
 	"""a representation of a slurm job, mainly in sacct context
 
 	Attributes are named to match sacct's variables very closely.
@@ -95,130 +140,27 @@ class Job(util.LazyDict):
 		#=== other
 		
 		'JobScript',
-		#the text of the job payload script.
+		#the text of the job payload script
 
 		'JobScriptPreview',
-		#a one-line, (hopefully) representative preview of the JobScript.
+		#a one-line, (hopefully) representative preview of the JobScript
 
 		'SacctReport',
 		#an sacct report, formatted for humans and containing headers
 	]
 
-	primary_key = 'JobID'
-	
-	def load_data(self, keys=[]):
-		for key in keys:
-			if not self.has_key(key):
-				#--- sacct data
+	extensions = [
+		x_ReqMem_bytes_total_from_per_core(),
+		x_ReqMem_bytes_total_from_per_core(),
+		x_CPU_Efficiency(),
+		x_CPU_Wasted(),
+		x_JobScript(),
+		x_JobScriptPreview(),
+		x_SacctReport(),
+	]
 
-				#(not implemented yet)
-
-
-				#--- other one-off queries
-
-				if key == 'JobScript':
-					try:
-						self['JobScript'] = config.get_job_script(self['JobID'])
-					except NotImplementedError:
-						self['JobScript'] = None
-					
-				elif key == 'SacctReport':
-					shv = ['sacct', '--format', _sacct_format_readable, '-j', self['JobID']]
-					self['SacctReport'] = util.runsh(shv).rstrip()
-
-
-				#--- derived
-
-				if key == 'ReqMem_bytes_total':
-					if self.has_key('ReqMem_bytes_per_core') and self['ReqMem_bytes_per_core'] is not None:
-						if self.has_key('ReqMem_bytes_per_node') and self['ReqMem_bytes_per_node'] is not None:
-							raise Exception("both memory-per-node and memory-per-core used, and this cannot handle that")
-						self['ReqMem_bytes_total'] = self['ReqMem_bytes_per_core'] * self['NCPUS']
-					elif self.has_key('ReqMem_bytes_per_node') and self['ReqMem_bytes_per_node'] is not None:
-						self['ReqMem_bytes_total'] = self['ReqMem_bytes_per_node'] * self['NNodes']
-					else:
-						self['ReqMem_bytes_total'] = None
-
-				elif key == 'CPU_Efficiency':
-					if self.has_key('TotalCPU') and self['TotalCPU']!=0 and \
-						self.has_key('CPUTime') and self['CPUTime']!=0:
-						self['CPU_Efficiency'] = float(self['TotalCPU'])/self['CPUTime']
-					else:
-						self['CPU_Efficiency'] = None
-
-				elif key == 'CPU_Wasted':
-					if self.has_key('TotalCPU') and self.has_key('CPUTime'):
-						self['CPU_Wasted'] = max(self['CPUTime'] - self['TotalCPU'], 0)
-					else:
-						self['CPU_Efficiency'] = None
-
-				elif key == 'JobScriptPreview':
-					try:
-						self['JobScriptPreview'] = slurmmon.job_script_preview(self['JobScript'], self)
-					except KeyError:
-						self['JobScriptPreview'] = None
-
-	def load_data_from_sacct_text_block(self, saccttext):
-		"""Load data from a multi-line, parsable sacct block of text.
-		
-		This does not respect the internal laziness setting -- everything 
-		possible is loaded.
-		"""
-		try:
-			for line in saccttext.split('\n'):
-				line = line.strip()
-				if line=='':
-					continue
-
-				User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList = line.split('|')
-				
-				#convert JobID to just the base id, and set an extra JobStep variable with the step key
-				JobStep = ''
-				if '.' in JobID:
-					JobID, JobStep = JobID.split('.')
-		
-				if JobStep=='':
-					#this is the main job line
-
-					#these things should be present in this main line and better than any data in the job steps
-					self['JobID'] = JobID
-					self['User'] = User
-					self['JobName'] = JobName
-					self['State'] = State
-					self['Partition'] = Partition
-					self['NCPUS'] = int(NCPUS)
-					self['NNodes'] = int(NNodes)
-					self['CPUTime'] = slurmmon.slurmtime_to_seconds(CPUTime)
-					self['TotalCPU'] = slurmmon.slurmtime_to_seconds(TotalCPU)
-					self['UserCPU'] = slurmmon.slurmtime_to_seconds(UserCPU)
-					self['SystemCPU'] = slurmmon.slurmtime_to_seconds(SystemCPU)
-
-					continue
-				else:
-					#these are the job steps after the main entry
-
-					#ReqMem
-					if ReqMem.endswith('Mn'):
-						ReqMem_bytes_per_node = int(ReqMem[:-2])*1024**2
-						if self.has_key('ReqMem_bytes_per_node'):
-							ReqMem_bytes_per_node = max(self['ReqMem_bytes_per_node'], ReqMem_bytes_per_node)
-						self['ReqMem_bytes_per_node'] = ReqMem_bytes_per_node
-						self['ReqMem_bytes_per_core'] = None
-					elif ReqMem.endswith('Mc'):
-						ReqMem_bytes_per_core = int(ReqMem[:-2])*1024**2
-						if self.has_key('ReqMem_bytes_per_core'):
-							ReqMem_bytes_per_core = max(self['ReqMem_bytes_per_core'], ReqMem_bytes_per_core)
-						self['ReqMem_bytes_per_node'] = None
-						self['ReqMem_bytes_per_core'] = ReqMem_bytes_per_core
-						
-					#MaxRSS
-					MaxRSS_kB = slurmmon.MaxRSS_to_kB(MaxRSS)
-					if self.has_key('MaxRSS_kB'):
-						MaxRSS_kB = max(self['MaxRSS_kB'], MaxRSS_kB)
-					self['MaxRSS_kB'] = MaxRSS_kB
-
-		except Exception, e:
-			raise Exception("unable to parse sacct job text [%r]: %r\n" % (saccttext, e))
+	def __str__(self):
+		return '<JobID %s>' % self['JobID']
 
 
 #--- job retrieval
@@ -256,11 +198,73 @@ def _yield_raw_sacct_job_text_blocks(state='COMPLETED', starttime=None, endtime=
 	if text!='':
 		yield text
 
+def load_data_from_sacct_text_block(job, saccttext):
+	"""Load data into job from a multi-line, parsable sacct block of text.
+	
+	This does not respect the internal laziness setting -- everything 
+	possible is loaded.
+	"""
+	try:
+		for line in saccttext.split('\n'):
+			line = line.strip()
+			if line=='':
+				continue
+
+			User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList = line.split('|')
+			
+			#convert JobID to just the base id, and set an extra JobStep variable with the step key
+			JobStep = ''
+			if '.' in JobID:
+				JobID, JobStep = JobID.split('.')
+	
+			if JobStep=='':
+				#this is the main job line
+
+				#these things should be present in this main line and better than any data in the job steps
+				job['JobID'] = JobID
+				job['User'] = User
+				job['JobName'] = JobName
+				job['State'] = State
+				job['Partition'] = Partition
+				job['NCPUS'] = int(NCPUS)
+				job['NNodes'] = int(NNodes)
+				job['CPUTime'] = slurmmon.slurmtime_to_seconds(CPUTime)
+				job['TotalCPU'] = slurmmon.slurmtime_to_seconds(TotalCPU)
+				job['UserCPU'] = slurmmon.slurmtime_to_seconds(UserCPU)
+				job['SystemCPU'] = slurmmon.slurmtime_to_seconds(SystemCPU)
+
+				continue
+			else:
+				#these are the job steps after the main entry
+
+				#ReqMem
+				if ReqMem.endswith('Mn'):
+					ReqMem_bytes_per_node = int(ReqMem[:-2])*1024**2
+					if job.has_key('ReqMem_bytes_per_node'):
+						ReqMem_bytes_per_node = max(job['ReqMem_bytes_per_node'], ReqMem_bytes_per_node)
+					job['ReqMem_bytes_per_node'] = ReqMem_bytes_per_node
+					job['ReqMem_bytes_per_core'] = None
+				elif ReqMem.endswith('Mc'):
+					ReqMem_bytes_per_core = int(ReqMem[:-2])*1024**2
+					if job.has_key('ReqMem_bytes_per_core'):
+						ReqMem_bytes_per_core = max(job['ReqMem_bytes_per_core'], ReqMem_bytes_per_core)
+					job['ReqMem_bytes_per_node'] = None
+					job['ReqMem_bytes_per_core'] = ReqMem_bytes_per_core
+					
+				#MaxRSS
+				MaxRSS_kB = slurmmon.MaxRSS_to_kB(MaxRSS)
+				if job.has_key('MaxRSS_kB'):
+					MaxRSS_kB = max(job['MaxRSS_kB'], MaxRSS_kB)
+				job['MaxRSS_kB'] = MaxRSS_kB
+
+	except Exception, e:
+		raise Exception("unable to parse sacct job text [%r]: %r\n" % (saccttext, e))
+
 def get_jobs(state='COMPLETED', starttime=None, endtime=None, filter=lambda j: True):
 	"""Yield Job objects that match the given parameters."""
 	for saccttext in _yield_raw_sacct_job_text_blocks(state=state, starttime=starttime, endtime=endtime):
 		j = Job()
-		j.load_data_from_sacct_text_block(saccttext)
+		load_data_from_sacct_text_block(j, saccttext)
 		if filter(j):
 			yield j
 
