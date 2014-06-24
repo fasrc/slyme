@@ -151,7 +151,7 @@ class Job(lazydict.LazyDict):
 
 	extensions = [
 		x_ReqMem_bytes_total_from_per_core(),
-		x_ReqMem_bytes_total_from_per_core(),
+		x_ReqMem_bytes_total_from_per_node(),
 		x_CPU_Efficiency(),
 		x_CPU_Wasted(),
 		x_JobScript(),
