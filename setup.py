@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "slyme",
-    version = "0.1.0",
+    version = "0.2.0",
     author='John Brunelle <john_brunelle@harvard.edu>, Aaron Kitzmiller <aaron_kitzmiller@harvard.edu>',
     author_email='aaron_kitzmiller@harvard.edu',
     description='Python modules for wrapping the Slurm tools',
@@ -19,6 +19,7 @@ setup(
     keywords = "slurm",
     url='http://pypi.python.org/pypi/slyme/',
     packages = find_packages(),
+    package_data={'slyme': ['*.conf']},
     long_description=open('README.txt').read(),
     classifiers=[
         "Development Status :: 3 - Alpha",

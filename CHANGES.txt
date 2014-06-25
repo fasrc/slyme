@@ -1,1 +1,2 @@
 v0.1.0, 5-24-2014 -- Initial release
+v0.2.0, 6-25-2014 -- Changes to support 2.6 including log configuration by file

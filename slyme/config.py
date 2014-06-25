@@ -18,44 +18,51 @@ import sys
 
 # If logging setup is in the environment, use it.  Otherwise, default to 
 # console stderr at ERROR level
-LOG_LEVEL       = os.environ.get('SLYME_LOG_LEVEL')
-if LOG_LEVEL is None:
-    LOG_LEVEL = 'ERROR'
-LOG_HANDLER      = os.environ.get('SLYME_LOG_HANDLER')
-if LOG_HANDLER is None:
-    LOG_HANDLER = 'console'
+LOG_FILE       = os.environ.get('SLYME_LOG_CONFIG')
+if LOG_FILE is None:
+    LOG_FILE = 'logging.prod.conf'
+    
+# If the specified log file doesn't exist, it may be one of the 
+# files that comes with the installation
+if not os.path.exists(LOG_FILE):
+    path = os.path.dirname(os.path.realpath(__file__))
+    logfile = "%s/%s" % (path,LOG_FILE)
+    if not os.path.exists(logfile):
+        raise Exception("Can't find a log config file %s or %s" % (LOG_FILE,logfile))
+    LOG_FILE = logfile
+    
 
 # Logging configuration
-LOGGING = {
-    'version' : 1,
-    'disable_existing_loggers' : False,
-    'formatters' : {
-        'default' : {
-            'format' : "%(asctime)s %(levelname)s %(name)s %(message)s"
-        },
-        'brief' : {
-            'format' : "%(message)s"
-        }
-    },
-    'handlers' : {
-        'console' : {
-            'class' : 'logging.StreamHandler',
-            'level' : LOG_LEVEL,
-            'stream': 'ext://sys.stdout',
-            'formatter' : 'brief'
-        }
-    },
-    'loggers' : {
-        'slyme' : {
-            'level' : LOG_LEVEL,
-            'handlers' : [LOG_HANDLER],
-            'propagate' : True
-        }
-    }
-}
+# LOGGING = {
+#     'version' : 1,
+#     'disable_existing_loggers' : False,
+#     'formatters' : {
+#         'default' : {
+#             'format' : "%(asctime)s %(levelname)s %(name)s %(message)s"
+#         },
+#         'brief' : {
+#             'format' : "%(message)s"
+#         }
+#     },
+#     'handlers' : {
+#         'console' : {
+#             'class' : 'logging.StreamHandler',
+#             'level' : LOG_LEVEL,
+#             'stream': 'ext://sys.stdout',
+#             'formatter' : 'brief'
+#         }
+#     },
+#     'loggers' : {
+#         'slyme' : {
+#             'level' : LOG_LEVEL,
+#             'handlers' : [LOG_HANDLER],
+#             'propagate' : True
+#         }
+#     }
+# }
 
 
-logging.config.dictConfig(LOGGING)
+logging.config.fileConfig(LOG_FILE,disable_existing_loggers=False)
 logger = logging.getLogger('slyme')
 
 

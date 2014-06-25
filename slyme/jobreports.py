@@ -11,7 +11,6 @@ Created on May 6, 2014
 '''
 
 # from util import runsh_i
-from importlib import import_module # Used to import the command executor
 import logging
 import re
 from datetime import datetime
@@ -263,7 +262,10 @@ class SacctFactory(object):
     Generates the JobSteps from sacct output
     '''
     
-    _sacct_format_parsable = 'JobID    ,User    ,JobName   ,State,Partition   ,NCPUS,NNodes,CPUTime   ,TotalCPU   ,UserCPU   ,SystemCPU   ,ReqMem,MaxRSS,Start,End,NodeList,Elapsed'.replace(' ','')
+    _sacct_format_parsable = \
+        'JobID  ,User      ,JobName    ,State    ,Partition  ,NCPUS  ,\
+         NNodes ,CPUTime   ,TotalCPU   ,UserCPU  ,SystemCPU  ,ReqMem ,MaxRSS,\
+         Start  ,End       ,NodeList   ,Elapsed'.replace(' ','')
     
     def _yield_raw_sacct_job_text_blocks(self,**kwargs):
         """
