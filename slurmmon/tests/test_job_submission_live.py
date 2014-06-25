@@ -17,6 +17,7 @@ except ImportError:
 	import slurmmon
 from slurmmon import jobs
 
+
 #dependency on slurm_utils
 slurm_utils_example_jobs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../../slurm_utils/example_jobs/'))
 print "changing directory to:", slurm_utils_example_jobs_dir
@@ -30,8 +31,12 @@ except OSError, e:
 
 
 class SubmissionTestCase(unittest.TestCase):
-	def test_just_batch_script(self):
-		pass
+	def test_just_batch_script_serial_hello_world(self):
+		j = jobs.Job(JobScript=open('hello_world.sbatch').read())
+
+		jobs.submit(j)
+
+		self.assertTrue(isinstance(int(j['JobID']), int))
 
 
 if __name__=='__main__':

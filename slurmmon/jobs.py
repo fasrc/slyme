@@ -5,7 +5,7 @@
 """slurmmon job handling"""
 
 
-import sys
+import sys, re
 import slurmmon
 from slurmmon import config, util, lazydict
 
@@ -15,7 +15,7 @@ _sacct_format_parsable = 'User    ,JobID    ,JobName   ,State,Partition   ,NCPUS
 _sacct_format_readable = 'User%-12,JobID%-15,JobName%20,State,Partition%18,NCPUS,NNodes,CPUTime%13,TotalCPU%13,UserCPU%13,SystemCPU%13,ReqMem,MaxRSS,Start,End,NodeList%-500'.replace(' ','')
 
 
-#--- data structures
+#--- a representation of a Job
 
 class x_ReqMem_bytes_total_from_per_core(lazydict.Extension):
 	source = ('ReqMem_bytes_per_core', 'NCPUS',)
@@ -23,7 +23,7 @@ class x_ReqMem_bytes_total_from_per_core(lazydict.Extension):
 	def __call__(self, ReqMem_bytes_per_core, NCPUS):
 		return ReqMem_bytes_per_core * NCPUS,
 
-class x_ReqMem_bytes_total_from_per_core(lazydict.Extension):
+class x_ReqMem_bytes_total_from_per_node(lazydict.Extension):
 	source = ('ReqMem_bytes_per_node', 'NNodes',)
 	target = ('ReqMem_bytes_total')
 	def __call__(self, ReqMem_bytes_per_node, NNodes):
@@ -63,7 +63,7 @@ class x_SacctReport(lazydict.Extension):
 		return util.runsh(shv).rstrip(),
 
 class Job(lazydict.LazyDict):
-	"""a representation of a slurm job, mainly in sacct context
+	"""A representation of a slurm job, mainly in sacct context.
 
 	Attributes are named to match sacct's variables very closely.
 	Plus, some derived attributes are added, and some are clarified or made consistent, e.g. MaxRSS becomes MaxRSS_kB.
@@ -160,7 +160,32 @@ class Job(lazydict.LazyDict):
 	]
 
 	def __str__(self):
-		return '<JobID %s>' % self['JobID']
+		try:
+			return '<JobID %s>' % self['JobID']
+		except KeyError:
+			return '<JobID n/a (obj id %s)>' % id(self)  #subject to change
+
+
+#--- commands
+
+re_sbatch_output = re.compile('Submitted batch job (\d+)\n')
+
+def submit(job):
+	"""Submit the given job.
+
+	The given job must have a JobScript, which may have `#SBATCH' lines.
+
+	This modifies the job:
+		* sets its JobID
+	"""
+	if not job.has_key('JobScript'):
+		raise Exception("*** ERROR *** cannot submit job [%s], it has no JobScript" % j)
+
+	stdout = util.runsh(['sbatch'], job['JobScript'])
+	try:
+		job['JobID'] = re_sbatch_output.match(stdout).group(1)
+	except (AttributeError, IndexError):
+		raise Exception("*** ERROR *** unexpected output from sbatch: %s" % repr(stdout))
 
 
 #--- job retrieval
