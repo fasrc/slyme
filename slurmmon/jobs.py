@@ -190,18 +190,30 @@ def submit(job):
 
 #--- job retrieval
 
-def _yield_raw_sacct_job_lines(state='COMPLETED', starttime=None, endtime=None):
+def _yield_raw_sacct_job_lines(state='COMPLETED', users=None, jobs=None, starttime=None, endtime=None):
 	"""Return an iterator that yields lines from sacct."""
-	shv = ['sacct', '--allusers', '--noheader', '--parsable2', '--format', _sacct_format_parsable]
+	shv = ['sacct',  '--noheader', '--parsable2', '--format', _sacct_format_parsable]
+	
 	if state is not None:
 		shv.extend(['--state', state])
+	
+	if jobs is not None:
+		shv.extend(['--jobs', ','.join(jobs)])
+	
+	if users is not None:
+		shv.extend(['--user', ','.join(users)])
+	else:
+		shv.extend(['--allusers'])
+
 	if starttime is not None:
 		shv.extend(['--starttime', starttime.strftime('%m/%d-%H:%M')])
+	
 	if endtime is not None:
 		shv.extend(['--endtime', endtime.strftime('%m/%d-%H:%M')])
+	
 	return util.runsh_i(shv)
 
-def _yield_raw_sacct_job_text_blocks(state='COMPLETED', starttime=None, endtime=None):
+def _yield_raw_sacct_job_text_blocks(state='COMPLETED', users=None, jobs=None, starttime=None, endtime=None):
 	"""Yields multi-line strings of sacct text for each job.
 
 	state can, in theory, be any string accepted by sacct --state.
@@ -213,7 +225,7 @@ def _yield_raw_sacct_job_text_blocks(state='COMPLETED', starttime=None, endtime=
 	#this will be the text that's yielded
 	text = ''
 
-	for line in _yield_raw_sacct_job_lines(state=state, starttime=starttime, endtime=endtime):
+	for line in _yield_raw_sacct_job_lines(state=state, users=users, jobs=jobs, starttime=starttime, endtime=endtime):
 		if line.startswith('|'):
 			text += line
 		else:

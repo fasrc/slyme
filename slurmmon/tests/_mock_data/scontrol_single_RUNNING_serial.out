@@ -1,0 +1,24 @@
+JobId=75270 Name=hello_world
+   UserId=jab(34928) GroupId=rc_admin(40273)
+   Priority=29961438 Nice=0 Account=rc_admin QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 ExitCode=0:0
+   RunTime=00:00:12 TimeLimit=00:05:00 TimeMin=N/A
+   SubmitTime=2014-06-24T20:24:18 EligibleTime=2014-06-24T20:24:18
+   StartTime=2014-06-24T20:24:19 EndTime=2014-06-24T20:29:19
+   PreemptTime=None SuspendTime=None SecsPreSuspend=0
+   Partition=general AllocNode:Sid=hero4502:28380
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=hero4503
+   BatchHost=hero4503
+   NumNodes=1 NumCPUs=1 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=0
+   MinCPUsNode=1 MinMemoryNode=100M MinTmpDiskNode=0
+   Features=(null) Gres=(null) Reservation=(null)
+   Shared=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=(null)
+   WorkDir=/n/home_rc/jab/harvard/sw/slurm_utils/example_jobs
+   StdErr=/n/home_rc/jab/harvard/sw/slurm_utils/example_jobs/hello_world.err
+   StdIn=/dev/null
+   StdOut=/n/home_rc/jab/harvard/sw/slurm_utils/example_jobs/hello_world.out
+

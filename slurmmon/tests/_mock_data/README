@@ -1,11 +1,16 @@
+#--- bulk records
+
 sacct_bulk_COMPLETED_day_parsable.out
 	$ sacct --allusers --noheader --parsable2 \
 		--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList \
 		--state COMPLETED --starttime 04/30-00:00:00 --endtime 05/01-23:59:59 \
-		> sacct_parsable_day.out
+		> sacct_bulk_COMPLETED_day_parsable.out
 	
 	that --format must match jobs._sacct_format_parsable
 
+
+
+#--- single records
 
 scontrol_single_RUNNING_serial.out
 	in slurm_utils/example_jobs/
@@ -14,3 +19,13 @@ scontrol_single_RUNNING_serial.out
 		(remove the sleep)
 
 		$ scontrol show job THAT_JOB_ID > scontrol_single_RUNNING_serial.out
+
+sacct_single_COMPLETED_parsable.out
+	$ sacct --noheader --parsable2 \
+		--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList \
+		--jobs SOME_JOB_ID
+		> sacct_single_COMPLETED_parsable.out
+	
+	where SOME_JOB_ID is preferably the job from the submission above
+	
+	that --format must match jobs._sacct_format_parsable
