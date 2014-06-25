@@ -1,0 +1,16 @@
+sacct_bulk_COMPLETED_day_parsable.out
+	$ sacct --allusers --noheader --parsable2 \
+		--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList \
+		--state COMPLETED --starttime 04/30-00:00:00 --endtime 05/01-23:59:59 \
+		> sacct_parsable_day.out
+	
+	that --format must match jobs._sacct_format_parsable
+
+
+scontrol_single_RUNNING_serial.out
+	in slurm_utils/example_jobs/
+		temporarily add along sleep to hello_world.sbatch
+		$ sbatch < hello_world.sbatch
+		(remove the sleep)
+
+		$ scontrol show job THAT_JOB_ID > scontrol_single_RUNNING_serial.out
