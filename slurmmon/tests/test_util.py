@@ -19,7 +19,7 @@ class ShTestCase(unittest.TestCase):
 	funky_string = r"""foo'bar "more" \' \" \n zzz"""
 	funky_string_quoted = r"""'foo'\''bar "more" \'\'' \" \n zzz'"""
 
-	#runsh() focused
+	#basic runsh()
 	def test_runsh_string(self):
 		"""That runsh() works on sh code as a string."""
 		self.assertEqual(
@@ -32,8 +32,22 @@ class ShTestCase(unittest.TestCase):
 			u.runsh(['echo','foo']),
 			'foo\n',
 		)
+	
+	#runsh() with stdinstr
+	def test_runsh(self):
+		"""That runsh_with_stdin() works on sh code as a string."""
+		self.assertEqual(
+			u.runsh('cat', inputstr='foo'),
+			'foo',
+		)
+	def test_runsh_with_stdin_list(self):
+		"""That runsh_with_stdin() works on argv list."""
+		self.assertEqual(
+			u.runsh(['cat',], inputstr='foo'),
+			'foo',
+		)
 
-	#runsh_i() focused
+	#basic runsh_i()
 	def test_runsh_i_string(self):
 		"""That runsh_i() works on sh code as a string."""
 		self.assertEqual(
@@ -47,7 +61,7 @@ class ShTestCase(unittest.TestCase):
 			['foo\n', 'bar\n'],
 		)
 
-	#shquote() focused
+	#shquote()
 	def test_shquote(self):
 		"""That quoting with shquote() == quoting manually."""
 		self.assertEqual(
@@ -61,7 +75,7 @@ class ShTestCase(unittest.TestCase):
 			ShTestCase.funky_string
 		)
 	
-	#sherrcheck() focused
+	#sherrcheck()
 	def test_sherrcheck_status(self):
 		self.assertRaises(Exception, u.runsh, ['false'])
 	def test_sherrcheck_stderr(self):

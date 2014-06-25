@@ -91,7 +91,7 @@ def sherrcheck(sh=None, stderr=None, returncode=None, verbose=True):
 			if verbose: msg += ", stderr is [%s]" % repr(stderr)
 		raise Exception(msg)
 
-def runsh(sh):
+def runsh(sh, inputstr=None):
 	"""Run shell code and return stdout.
 
 	This raises an Exception if exit status is non-zero or stderr is non-empty.
@@ -100,14 +100,22 @@ def runsh(sh):
 		shell=True
 	else:
 		shell=False
+	
+	if inputstr is None:
+		stdin = open('/dev/null', 'r')
+		communicate_args = ()
+	else:
+		stdin = subprocess.PIPE
+		communicate_args = (inputstr,)
+
 	p = subprocess.Popen(
 		sh,
 		shell=shell,
-		stdin=open('/dev/null', 'r'),
+		stdin=stdin,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE
 	)
-	stdout, stderr = p.communicate()
+	stdout, stderr = p.communicate(*communicate_args)
 	sherrcheck(sh, stderr, p.returncode)
 	return stdout
 
