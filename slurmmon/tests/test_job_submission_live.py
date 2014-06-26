@@ -36,7 +36,9 @@ class SubmissionTestCase(unittest.TestCase):
 
 		jobs.submit(j)
 
-		self.assertTrue(isinstance(int(j['JobID']), int))
+		self.assertTrue(isinstance(int(j['JobID']), int),
+			"submitting a job did not result in an JobID that can be parsed as an int"
+		)
 
 
 if __name__=='__main__':

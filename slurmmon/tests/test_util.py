@@ -12,7 +12,7 @@ try:
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 	import slurmmon
-from slurmmon import util as u
+from slurmmon import util
 
 
 class ShTestCase(unittest.TestCase):
@@ -21,65 +21,61 @@ class ShTestCase(unittest.TestCase):
 
 	#basic runsh()
 	def test_runsh_string(self):
-		"""That runsh() works on sh code as a string."""
-		self.assertEqual(
-			u.runsh('echo foo'),
-			'foo\n',
+		self.assertEqual(util.runsh('echo foo'), 'foo\n',
+			"runsh() does not work on sh code as a string"
 		)
 	def test_runsh_list(self):
-		"""That runsh() works on an argv list."""
-		self.assertEqual(
-			u.runsh(['echo','foo']),
-			'foo\n',
+		self.assertEqual(util.runsh(['echo','foo']), 'foo\n',
+			"runsh() does not works on an argv list"
 		)
 	
 	#runsh() with stdinstr
 	def test_runsh(self):
-		"""That runsh_with_stdin() works on sh code as a string."""
-		self.assertEqual(
-			u.runsh('cat', inputstr='foo'),
-			'foo',
+		self.assertEqual(util.runsh('cat', inputstr='foo'), 'foo',
+			"runsh does not work on sh code as a string, when providing stdin"
 		)
 	def test_runsh_with_stdin_list(self):
 		"""That runsh_with_stdin() works on argv list."""
-		self.assertEqual(
-			u.runsh(['cat',], inputstr='foo'),
-			'foo',
+		self.assertEqual(util.runsh(['cat',], inputstr='foo'), 'foo',
+			"runsh does not work on an argv list, when providing stdin"
+			
 		)
 
 	#basic runsh_i()
 	def test_runsh_i_string(self):
-		"""That runsh_i() works on sh code as a string."""
 		self.assertEqual(
-			[line for line in u.runsh_i("echo -e 'foo\nbar'")],
+			[line for line in util.runsh_i("echo -e 'foo\nbar'")],
 			['foo\n', 'bar\n'],
+			"runsh_i() does not work on sh code as a string"
 		)
 	def test_runsh_list(self):
-		"""That runsh_i() works on an argv list."""
 		self.assertEqual(
-			[line for line in u.runsh_i(['echo', '-e', 'foo\nbar'])],
+			[line for line in util.runsh_i(['echo', '-e', 'foo\nbar'])],
 			['foo\n', 'bar\n'],
+			"runsh_i() does not work on an argv list"
 		)
 
 	#shquote()
 	def test_shquote(self):
-		"""That quoting with shquote() == quoting manually."""
 		self.assertEqual(
-			u.shquote(ShTestCase.funky_string),
-			ShTestCase.funky_string_quoted
+			util.shquote(ShTestCase.funky_string),
+			ShTestCase.funky_string_quoted,
+			"quoting with shquote() is not the same as quoting manually"
 		)
 	def test_shquote_runsh(self):
-		"""That echo is identity for a funky_string."""
 		self.assertEqual(
-			u.runsh('echo -n %s' % u.shquote(ShTestCase.funky_string)),
-			ShTestCase.funky_string
+			util.runsh('echo -n %s' % util.shquote(ShTestCase.funky_string)),
+			ShTestCase.funky_string,
+			"echo is not identity for a funky_string"
 		)
 	
 	#sherrcheck()
 	def test_sherrcheck_status(self):
-		self.assertRaises(Exception, u.runsh, ['false'])
+		"""Test that a non-zero exit status raises an Exception."""
+		self.assertRaises(Exception, util.runsh, ['false'])
 	def test_sherrcheck_stderr(self):
-		self.assertRaises(Exception, u.runsh, 'echo foo >&2')
+		"""Test that non-empty stderr raises an Exception."""
+		self.assertRaises(Exception, util.runsh, 'echo foo >&2')
 
 
 if __name__=='__main__':

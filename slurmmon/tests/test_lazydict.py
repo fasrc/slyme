@@ -18,22 +18,34 @@ from slurmmon import lazydict
 #--- an example LazyDict
 
 class x_age(lazydict.Extension):
+	"""A very typical, one-to-one extension."""
 	source= ('birthdate',)
 	target = ('age',)
 	def __call__(cls, birthdate):
 		return time.time() - birthdate,
 
 class x_math(lazydict.Extension):
+	"""A very typical, many-to-many extension."""
 	source= ('x', 'y',)
 	target = ('sum', 'diff',)
 	def __call__(cls, x, y):
 		return x+y, x-y
 
 class x_identity(lazydict.Extension):
+	"""A simple identity/rename extension.
+	
+	Note that there is no implementation -- this is for testing the default 
+	behavior.
+	"""
 	source= ('name',)
 	target = ('name_copy',)
+
+class x_never(lazydict.Extension):
+	"""An extension where the target never actually gets computed."""
+	source= ('name',)
+	target = ('never',)
 	def __call__(self, name):
-		return name,
+		return None,
 
 class ExampleLazyDict(lazydict.LazyDict):
 	keys = [
@@ -107,10 +119,8 @@ class LazyDictTestCase(unittest.TestCase):
 		
 		age = e(self.in_birthdate)[0]
 
-		self.assertAlmostEqual(
-			age,
-			self.out_age,
-			places=0,
+		self.assertAlmostEqual(age, self.out_age, 0,
+			"a one-to-one extension (using Extension class directly) did not result in the expected numerical value"
 		)
 
 	def test_extension_many_to_many(self):
@@ -118,13 +128,11 @@ class LazyDictTestCase(unittest.TestCase):
 
 		sum, diff = e(self.in_x, self.in_y)
 
-		self.assertEqual(
-			sum,
-			self.out_sum
+		self.assertEqual(sum, self.out_sum,
+			"a many-to-many extension (using Extension class directly) resulted in at least one bad value"
 		)
-		self.assertEqual(
-			diff,
-			self.out_diff
+		self.assertEqual(diff, self.out_diff,
+			"a many-to-many extension (using Extension class directly) resulted in at least one bad value"
 		)
 	
 
@@ -140,22 +148,18 @@ class LazyDictTestCase(unittest.TestCase):
 	def test_getitem_extension_one_to_one(self):
 		d = ExampleLazyDict(name=self.in_name, birthdate=self.in_birthdate)
 		
-		self.assertAlmostEqual(
-			d['age'],
-			self.out_age,
-			places=0,
+		self.assertAlmostEqual(d['age'], self.out_age, 0,
+			"a one-to-one extension did not result in the expected numerical value"
 		)
 	
 	def test_getitem_extension_many_to_many(self):
 		d = ExampleLazyDict(name=self.in_name, x=self.in_x, y=self.in_y)
 
-		self.assertEqual(
-			d['sum'],
-			self.out_sum,
+		self.assertEqual(d['sum'], self.out_sum,
+			"a many-to-many extension resulted in at least one bad value"
 		)
-		self.assertEqual(
-			d['diff'],
-			self.out_diff,
+		self.assertEqual(d['diff'], self.out_diff,
+			"a many-to-many extension resulted in at least one bad value"
 		)
 	
 	def test_getitem_not_available(self):
@@ -171,9 +175,8 @@ class LazyDictTestCase(unittest.TestCase):
 	
 	def test_getitem_identity_extension(self):
 		d = ExampleLazyDict(name=self.in_name)
-		self.assertEqual(
-			d['name'],
-			d['name_copy'],
+		self.assertEqual(d['name'], d['name_copy'],
+			"a simple identity extension did not work as expected"
 		)
 
 
@@ -240,11 +243,13 @@ class LazyDictTestCase(unittest.TestCase):
 		self.assertEqual(
 			d._extension_count,
 			count+1,  #i.e. one more
+			"extension execution count, after the first extension, is not what was expected"
 		)
 		d['age']
 		self.assertEqual(
 			d._extension_count,
 			count+1,  #i.e. no change
+			"extension execution count, after additional getitem, is not what was expected"
 		)
 
 	def test_getitem_extension_count_query_optimized(self):
@@ -258,12 +263,14 @@ class LazyDictTestCase(unittest.TestCase):
 		self.assertEqual(
 			d._extension_count,
 			count+1,  #i.e. one more
+			"extension execution count, when query-optimized, after the first extension, is not what was expected"
 		)
 
 		d['diff']  #this should have already been there
 		self.assertEqual(
 			d._extension_count,
 			count+1,  #i.e. no more
+			"extension execution count, when query-optimized, after additional getitem, is not what was expected"
 		)
 
 	def test_getitem_extension_count_data_optimized(self):
@@ -277,12 +284,14 @@ class LazyDictTestCase(unittest.TestCase):
 		self.assertEqual(
 			d._extension_count,
 			count+1,  #i.e. one more
+			"extension execution count, when data-optimized, after the first extension, is not what was expected"
 		)
 
 		d['diff']  #this will have to re-run the extension
 		self.assertEqual(
 			d._extension_count,
 			count+2,  #i.e. one more
+			"extension execution count, when data-optimized, after additional getitem, is not what was expected"
 		)
 
 
