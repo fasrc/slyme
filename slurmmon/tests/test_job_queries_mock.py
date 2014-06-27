@@ -16,7 +16,7 @@ except ImportError:
 from slurmmon import jobs
 
 
-class SacctTestCase(unittest.TestCase):
+class JobsTestCase(unittest.TestCase):
 	##this takes a long time and doesn't do anything useful yet
 	#def test_sacct_bulk(self):
 	#	with mock.patch('slurmmon.jobs._yield_raw_sacct_job_lines') as m:

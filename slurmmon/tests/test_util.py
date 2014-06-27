@@ -72,10 +72,24 @@ class ShTestCase(unittest.TestCase):
 	#sherrcheck()
 	def test_sherrcheck_status(self):
 		"""Test that a non-zero exit status raises an Exception."""
-		self.assertRaises(Exception, util.runsh, ['false'])
+		try:
+			util.runsh('exit 42')
+		except util.ShError, e:
+			self.assertEquals(e.returncode, 42,
+				"ShError does not include proper returncode"
+			)
+		else:
+			raise AssertionError("bash sh code did not raise proper exception")
 	def test_sherrcheck_stderr(self):
 		"""Test that non-empty stderr raises an Exception."""
-		self.assertRaises(Exception, util.runsh, 'echo foo >&2')
+		try:
+			util.runsh('echo foo >&2')
+		except util.ShError, e:
+			self.assertEquals(e.stderr, 'foo\n',
+				"ShError does not include proper stderr"
+			)
+		else:
+			raise AssertionError("bash sh code did not raise proper exception")
 
 
 if __name__=='__main__':

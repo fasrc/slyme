@@ -64,6 +64,16 @@ def get_mem():
 
 #--- subprocess handling
 
+class ShError(Exception):
+	"""An exception from running a subprocess.
+
+	It *may* have the following attributes:
+		sh
+		returncode
+		stderr
+	"""
+	pass
+
 def shquote(text):
 	"""Return the given text as a single, safe string in sh code.
 
@@ -89,7 +99,11 @@ def sherrcheck(sh=None, stderr=None, returncode=None, verbose=True):
 				msg += " killed by signal [%d]" % -returncode
 		if stderr is not None:
 			if verbose: msg += ", stderr is [%s]" % repr(stderr)
-		raise Exception(msg)
+		e = ShError(msg)
+		e.sh = sh
+		e.returncode = returncode
+		e.stderr = stderr
+		raise e
 
 def runsh(sh, inputstr=None):
 	"""Run shell code and return stdout.

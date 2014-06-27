@@ -68,6 +68,9 @@ class x_scontrol(lazydict.Extension):
 	def __call__(self, JobID):
 		try:
 			scontroltext = _yield_raw_scontrol_job_text_blocks(jobs=[JobID]).next()
+		except util.ShError, e:
+			if hasattr(e, 'stderr') and e.stderr.startswith('slurm_load_jobs error: Invalid job id specified'):
+				return [None]*len(x_scontrol.target)
 		except StopIteration:
 			return [None]*len(x_scontrol.target)
 
