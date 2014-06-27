@@ -138,7 +138,7 @@ class LazyDictTestCase(unittest.TestCase):
 
 	#--- fundamental LazyDict operation
 
-	def test_creation(self):
+	def test_instantiation(self):
 		#most simple
 		d = ExampleLazyDict(name=self.in_name)
 
@@ -162,15 +162,17 @@ class LazyDictTestCase(unittest.TestCase):
 			"a many-to-many extension resulted in at least one bad value"
 		)
 	
-	def test_getitem_not_available(self):
-		#note no birthdate, therefore not possible compute age by extension
+	def test_getitem_not_available_no_source(self):
+		#note no birthdate, therefore not possible to compute age by extension
 		d = ExampleLazyDict(name=self.in_name)
 		self.assertRaises(KeyError, d.__getitem__, 'age')
 	
-	def test_getitem_bad_key(self):
-		#note no birthdate, therefore not possible compute age by extension
+	def test_getitem_not_available_extension_not_providing_it(self):
 		d = ExampleLazyDict(name=self.in_name)
-
+		self.assertRaises(KeyError, d.__getitem__, 'never')
+	
+	def test_getitem_unexpected_key(self):
+		d = ExampleLazyDict(name=self.in_name)
 		self.assertRaises(KeyError, d.__getitem__, 'this-is-not-a-known-key')
 	
 	def test_getitem_identity_extension(self):

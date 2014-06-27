@@ -7,8 +7,8 @@
 
 class Extension(object):
 	"""Compute target data given source data."""
-	source = None  #a tuple of keys
-	target = None  #a tuple of keys
+	source = ()  #a tuple of keys
+	target = ()  #a tuple of keys
 	
 	def __str__(self):
 		return '<(%s)->(%s)>' % (','.join(self.source), ','.join(self.target))
@@ -20,6 +20,7 @@ class Extension(object):
 
 		:rtype: tuple (NOTE: possibly one-item -- if target is one-item)
 
+		If any target value is not available or computable, return None.
 		The default implementation is the identity (and not copies).
 		"""
 		return args
@@ -49,6 +50,10 @@ class LazyDict(dict):
 		* the key(s) necessary to compute the value are not present
 		* data extension is limited by the laziness setting
 		* the given key is not valid
+	
+	Values are never None -- that special value is used internally during the 
+	extension evaluation.  This might change, we'll see what problems we run 
+	into...
 
 	BUGS/TODO
 		Only direct extensions are currently supported.  That is, if you have 
@@ -103,17 +108,18 @@ class LazyDict(dict):
 					if key in e.target and all([ dict.has_key(self, sk) for sk in e.source ]):
 						LazyDict._extension_count += 1
 						for k, v in zip(e.target, e(*[ dict.__getitem__(self, sk) for sk in e.source ])):
-							if k == key:
-								self[k] = v
-								fulfilled = True
-							elif self._laziness == LazyDict.LAZINESS_QUERY_OPTIMIZED:
-								if self._overwrite:
+							if v is not None:
+								if k == key:
 									self[k] = v
-								else:
-									if not dict.has_key(self, k):
+									fulfilled = True
+								elif self._laziness == LazyDict.LAZINESS_QUERY_OPTIMIZED:
+									if self._overwrite:
 										self[k] = v
-							else:
-								if fulfilled: break
+									else:
+										if not dict.has_key(self, k):
+											self[k] = v
+								else:
+									if fulfilled: break
 				return dict.__getitem__(self, key)  #may still raise KeyError
 
 	def set_laziness(self, laziness):

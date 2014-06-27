@@ -11,11 +11,172 @@ from slurmmon import config, util, lazydict
 
 
 #sacct format; you can change _sacct_format_readable at will, but changing _sacct_format_parsable will break the code
-_sacct_format_parsable = 'User    ,JobID    ,JobName   ,State,Partition   ,NCPUS,NNodes,CPUTime   ,TotalCPU   ,UserCPU   ,SystemCPU   ,ReqMem,MaxRSS,Start,End,NodeList'.replace(' ','')
-_sacct_format_readable = 'User%-12,JobID%-15,JobName%20,State,Partition%18,NCPUS,NNodes,CPUTime%13,TotalCPU%13,UserCPU%13,SystemCPU%13,ReqMem,MaxRSS,Start,End,NodeList%-500'.replace(' ','')
+_sacct_format_parsable = 'User    ,JobID    ,JobName   ,State,Partition   ,NCPUS,NNodes,CPUTime   ,TotalCPU   ,UserCPU   ,SystemCPU   ,ReqMem,MaxRSS,Submit,Start,End,NodeList'.replace(' ','')
+_sacct_format_readable = 'User%-12,JobID%-15,JobName%20,State,Partition%18,NCPUS,NNodes,CPUTime%13,TotalCPU%13,UserCPU%13,SystemCPU%13,ReqMem,MaxRSS,Submit,Start,End,NodeList%-500'.replace(' ','')
+
+
+keys_sacct = (
+	'User',
+	'JobID',
+	'JobName',
+	'State',
+	'Partition',
+	'NCPUS',
+	'NNodes',
+	'CPUTime',
+	'TotalCPU',
+	'UserCPU',
+	'SystemCPU',
+	'ReqMem',
+	'MaxRSS',
+	'Submit',
+	'Start',
+	'End',
+	'NodeList',
+)
 
 
 #--- a representation of a Job
+
+scontrol_key_value_translations = {
+	'UserID':
+		lambda k, v: ('User', v.split('(')[0]),
+	'Name':
+		lambda k, v: ('JobName', v),
+	'NumNodes':
+		lambda k, v: ('NNodes', v),
+	'NumCPUs':
+		lambda k, v: ('NCPUS', v),
+	'MinMemoryNode':
+		lambda k, v: ('ReqMem_bytes_per_node', slurmmon.slurmmemory_to_kB(v)),
+	'MinMemoryCPU':
+		lambda k, v: ('ReqMem_bytes_per_core', slurmmon.slurmmemory_to_kB(v)),
+}
+
+class x_scontrol(lazydict.Extension):
+	source = ('JobID',)
+	target = (
+		'User',
+		'JobName',
+		'State',
+		'Partition',
+		'NNodes',
+		'NCPUS',
+		'ReqMem_bytes_per_node',
+		'ReqMem_bytes_per_core',
+	)
+	def __call__(self, JobID):
+		try:
+			scontroltext = _yield_raw_scontrol_job_text_blocks(jobs=[JobID]).next()
+		except StopIteration:
+			return [None]*len(x_scontrol.target)
+
+		d = dict.fromkeys(self.target)
+
+		try:
+			for kv in scontroltext.split():
+				k, v = kv.split('=',1)
+				try:
+					k, v = scontrol_key_value_translations[k](k, v)
+				except KeyError:
+					pass
+				d[k] = v
+		except Exception, e:
+			##hiding the actual error only makes things difficult
+			#raise Exception("unable to parse scontrol job text [%r]: %r\n" % (saccttext, e))
+			raise
+
+		##debug
+		#if True:
+		#	for k, v in d.items():
+		#		print 'scontrol value: %s=%s' % (k, v)
+
+		return [ d[k] for k in x_scontrol.target ]
+
+class x_sacct(lazydict.Extension):
+	source = ('JobID',)
+	target = (
+		'User',
+		'JobName',
+		'State',
+		'Partition',
+		'NCPUS',
+		'NNodes',
+		'CPUTime',
+		'TotalCPU',
+		'UserCPU',
+		'SystemCPU',
+		'MaxRSS_kB',
+		'ReqMem_bytes_per_core',
+		'ReqMem_bytes_per_node',
+	)
+	def __call__(self, JobID):
+		try:
+			saccttext = _yield_raw_sacct_job_text_blocks(jobs=[JobID]).next()
+		except StopIteration:
+			return [None]*len(self.target)
+		
+		#the final values
+		d = dict.fromkeys(self.target)
+
+		try:
+			for line in saccttext.split('\n'):
+				line = line.strip()
+				if line=='':
+					continue
+		
+
+				#the step (or whater line this is) value
+				dstep = dict(zip(keys_sacct,line.split('|')))
+
+				#convert JobID to just the base id, and set an extra JobStep variable with the step key
+				dstep['JobStep'] = ''
+				if '.' in dstep['JobID']:
+					dstep['JobID'], dstep['JobStep'] = dstep['JobID'].split('.')
+		
+				if dstep['JobStep']=='':
+					#this is the main job line (the top one)
+
+					#these things should be present in this main line and better than any data in the job steps
+					
+					d['User'] = dstep['User']
+					d['JobName'] = dstep['JobName']
+					d['State'] = dstep['State']
+					d['Partition'] = dstep['Partition']
+					d['NCPUS'] = int(dstep['NCPUS'])
+					d['NNodes'] = int(dstep['NNodes'])
+					d['CPUTime'] = slurmmon.slurmtime_to_seconds(dstep['CPUTime'])
+					d['TotalCPU'] = slurmmon.slurmtime_to_seconds(dstep['TotalCPU'])
+					d['UserCPU'] = slurmmon.slurmtime_to_seconds(dstep['UserCPU'])
+					d['SystemCPU'] = slurmmon.slurmtime_to_seconds(dstep['SystemCPU'])
+
+					continue
+				else:
+					#these are the job steps after the main entry
+
+					#ReqMem
+					if dstep['ReqMem'].endswith('Mn'):
+						dstep['ReqMem_bytes_per_node'] = int(dstep['ReqMem'][:-2])*1024**2
+						if d['ReqMem_bytes_per_node'] is not None:
+							d['ReqMem_bytes_per_node'] = max(d['ReqMem_bytes_per_node'], dstep['ReqMem_bytes_per_node'])
+						##assume consistency, i.e. that nothing set this
+						#d['ReqMem_bytes_per_core'] = None
+					elif dstep['ReqMem'].endswith('Mc'):
+						dstep['ReqMem_bytes_per_core'] = int(dstep['ReqMem'][:-2])*1024**2
+						if d['ReqMem_bytes_per_core'] is not None:
+							d['ReqMem_bytes_per_cored'] = max(d['ReqMem_bytes_per_core'], dstep['ReqMem_bytes_per_core'])
+						##assume consistency, i.e. that nothing set this
+						#d['ReqMem_bytes_per_node'] = None
+						
+					#MaxRSS
+					if dstep['MaxRSS'] is not None:
+						d['MaxRSS_kB'] = max(d['MaxRSS_kB'], slurmmon.slurmmemory_to_kB(dstep['MaxRSS']))
+		except Exception, e:
+			##hiding the actual error only makes things difficult
+			#raise Exception("unable to parse sacct job text [%r]: %r\n" % (saccttext, e))
+			raise
+
+		return tuple(d[k] for k in self.target)
 
 class x_ReqMem_bytes_total_from_per_core(lazydict.Extension):
 	source = ('ReqMem_bytes_per_core', 'NCPUS',)
@@ -41,25 +202,25 @@ class x_CPU_Wasted(lazydict.Extension):
 	source = ('TotalCPU', 'CPUTime',)
 	target = ('CPU_Wasted',)
 	def __call__(self, TotalCPU, CPUTime):
-		return max(self['CPUTime'] - self['TotalCPU'], 0),
+		return max(CPUTime - TotalCPU, 0),
 
 class x_JobScript(lazydict.Extension):
 	source= ('JobID',)
 	target = ('JobScript',)
 	def __call__(self, JobID):
-		return config.get_job_script(self['JobID']),
+		return config.get_job_script(JobID),
 
 class x_JobScriptPreview(lazydict.Extension):
 	source = ('JobScript',)
 	target = ('JobScriptPreview',)
 	def __call__(self, JobScript):
-		return slurmmon.job_script_preview(JobScript, self),
+		return slurmmon.job_script_preview(JobScript),
 
 class x_SacctReport(lazydict.Extension):
 	source= ('JobID',)
 	target = ('SacctReport',)
 	def __call__(self, JobID):
-		shv = ['sacct', '--format', _sacct_format_readable, '-j', self['JobID']]
+		shv = ['sacct', '--format', _sacct_format_readable, '-j', JobID]
 		return util.runsh(shv).rstrip(),
 
 class Job(lazydict.LazyDict):
@@ -150,6 +311,8 @@ class Job(lazydict.LazyDict):
 	]
 
 	extensions = [
+		x_scontrol(),
+		x_sacct(),
 		x_ReqMem_bytes_total_from_per_core(),
 		x_ReqMem_bytes_total_from_per_node(),
 		x_CPU_Efficiency(),
@@ -235,6 +398,19 @@ def _yield_raw_sacct_job_text_blocks(state='COMPLETED', users=None, jobs=None, s
 	if text!='':
 		yield text
 
+def _yield_raw_scontrol_job_text_blocks(jobs=None):
+	"""Yields strings of scontrol text for each job.
+
+	These are just single-line, not text blocks as the name implies, but it's 
+	named that way for consistency (the names should be changed, consistently).
+	"""
+	shv = ['scontrol', '--oneliner', 'show', 'job' ]
+	
+	if jobs is not None:
+		shv.extend(jobs)
+	
+	return util.runsh_i(shv)
+
 def load_data_from_sacct_text_block(job, saccttext):
 	"""Load data into job from a multi-line, parsable sacct block of text.
 	
@@ -247,7 +423,7 @@ def load_data_from_sacct_text_block(job, saccttext):
 			if line=='':
 				continue
 
-			User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList = line.split('|')
+			User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Submit,Start,End,NodeList = line.split('|')
 			
 			#convert JobID to just the base id, and set an extra JobStep variable with the step key
 			JobStep = ''
@@ -289,7 +465,7 @@ def load_data_from_sacct_text_block(job, saccttext):
 					job['ReqMem_bytes_per_core'] = ReqMem_bytes_per_core
 					
 				#MaxRSS
-				MaxRSS_kB = slurmmon.MaxRSS_to_kB(MaxRSS)
+				MaxRSS_kB = slurmmon.slurmmemory_to_kB(MaxRSS)
 				if job.has_key('MaxRSS_kB'):
 					MaxRSS_kB = max(job['MaxRSS_kB'], MaxRSS_kB)
 				job['MaxRSS_kB'] = MaxRSS_kB

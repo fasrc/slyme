@@ -12,20 +12,42 @@ sacct_bulk_COMPLETED_day_parsable.out
 
 #--- single records
 
-scontrol_single_RUNNING_serial.out
-	in slurm_utils/example_jobs/
-		temporarily add along sleep to hello_world.sbatch
-		$ sbatch < hello_world.sbatch
-		(remove the sleep)
+serial job
+	scontrol_single_serial_RUNNING.out
+		in slurm_utils/example_jobs/
+			temporarily add along sleep to hello_world.sbatch
+			$ sbatch < sleep_60s.sbatch
 
-		$ scontrol show job THAT_JOB_ID > scontrol_single_RUNNING_serial.out
+		in slurmmon/tests/_mock_data/
+			$ scontrol --oneliner show job THAT_JOB_ID | tee scontrol_single_serial_RUNNING.out
+			(make sure the job is actually running)
 
-sacct_single_COMPLETED_parsable.out
-	$ sacct --noheader --parsable2 \
-		--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,NodeList \
-		--jobs SOME_JOB_ID
-		> sacct_single_COMPLETED_parsable.out
-	
-	where SOME_JOB_ID is preferably the job from the submission above
-	
-	that --format must match jobs._sacct_format_parsable
+	sacct_single_serial_COMPLETED_parsable.out
+		$ sacct --noheader --parsable2 \
+			--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Submit,Start,End,NodeList \
+			--jobs SOME_JOB_ID
+			| tee sacct_single_serial_COMPLETED_parsable.out
+		
+		where SOME_JOB_ID is preferably the job from the submission above
+		
+		that --format must match jobs._sacct_format_parsable
+
+parallel job
+	scontrol_single_parallel_RUNNING.out
+		in slurm_utils/example_jobs/
+			temporarily add along sleep to hello_world.sbatch
+			$ sbatch < cpu_user_parallel.sbatch
+
+		in slurmmon/tests/_mock_data/
+			$ scontrol --oneliner show job THAT_JOB_ID | tee scontrol_single_parallel_RUNNING.out
+			(make sure the job is actually running)
+
+	sacct_single_parallel_COMPLETED_parsable.out
+		$ sacct --noheader --parsable2 \
+			--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Submit,Start,End,NodeList \
+			--jobs THAT_JOB_ID
+			| tee sacct_single_parallel_COMPLETED_parsable.out
+		
+		where SOME_JOB_ID is preferably the job from the submission above
+		
+		that --format must match jobs._sacct_format_parsable

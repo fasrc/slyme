@@ -40,22 +40,23 @@ def slurmtime_to_seconds(tstr):
 	
 	return t
 
-def MaxRSS_to_kB(MaxRSS):
-	"""Convert the MaxRSS string to bytes, an int.
+def slurmmemory_to_kB(mem):
+	"""Convert the memory string to bytes, an int.
 	
-	MaxRSS is the string from `sacct'.  This just assumes slurm is using powers 
-	of 10**3, at least until kB, like it is for other memory stats.
+	mem is a string such as MaxRSS from `sacct'.  This just assumes slurm is 
+	using powers of 10**3, at least until kB, like it is for other memory 
+	stats.
 	"""
-	MaxRSS_kB = None
+	mem_kB = None
 	for s,e in (('K',0), ('M',1), ('G',2), ('T',3), ('P',4)):
-		if MaxRSS.endswith(s):
-			MaxRSS_kB = int(round(float(MaxRSS[:-1])*1000**e))  #(float because it's often given that way)
+		if mem.endswith(s):
+			mem_kB = int(round(float(mem[:-1])*1000**e))  #(float because it's often given that way)
 			break
-	if MaxRSS_kB is None:
-		if MaxRSS=='0':
+	if mem_kB is None:
+		if mem=='0':
 			return 0
-		raise Exception("un-parsable MaxRSS [%r]" % MaxRSS)
-	return MaxRSS_kB
+		raise Exception("un-parsable mem [%r]" % mem)
+	return mem_kB
 
 def AllocMem_to_kB(AllocMem):
 	"""Convert the AllocMem string to bytes, an int.
