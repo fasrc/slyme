@@ -5,4 +5,4 @@ mocked:
 
 live:
 	python test_job_queries_live.py
-	python test_job_submission_live.py
+	python test_job_workflow_live.py

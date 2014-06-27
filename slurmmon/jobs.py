@@ -39,8 +39,14 @@ keys_sacct = (
 #--- a representation of a Job
 
 scontrol_key_value_translations = {
+	#translate scontrol key/value pairs to those used by the Job (which match 
+	#sacct's as closely as possible, so this is also basically a translation to 
+	#sacct key/value
+	
 	'UserID':
 		lambda k, v: ('User', v.split('(')[0]),
+	'JobState':
+		lambda k, v: ('State', v),
 	'Name':
 		lambda k, v: ('JobName', v),
 	'NumNodes':
@@ -69,11 +75,15 @@ class x_scontrol(lazydict.Extension):
 		try:
 			scontroltext = _yield_raw_scontrol_job_text_blocks(jobs=[JobID]).next()
 		except util.ShError, e:
+			#if it's from an unrecognized JobID, then this extension can do nothing
 			if hasattr(e, 'stderr') and e.stderr.startswith('slurm_load_jobs error: Invalid job id specified'):
 				return [None]*len(x_scontrol.target)
 		except StopIteration:
+			#the single iteration yielded nothing
+			#(I doubt this every actually happens -- the above `Invalid job id' happens)
 			return [None]*len(x_scontrol.target)
 
+		#the final values (initialize to None)
 		d = dict.fromkeys(self.target)
 
 		try:
@@ -119,7 +129,7 @@ class x_sacct(lazydict.Extension):
 		except StopIteration:
 			return [None]*len(self.target)
 		
-		#the final values
+		#the final values (initialize to None)
 		d = dict.fromkeys(self.target)
 
 		try:
@@ -352,6 +362,17 @@ def submit(job):
 		job['JobID'] = re_sbatch_output.match(stdout).group(1)
 	except (AttributeError, IndexError):
 		raise Exception("*** ERROR *** unexpected output from sbatch: %s" % repr(stdout))
+	return job
+
+def update(job):
+	try:
+		job.pop('State')
+	except KeyError:
+		pass
+	else:
+		job['State']
+	return job
+
 
 
 #--- job retrieval

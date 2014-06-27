@@ -7,7 +7,7 @@
 This requires a clone of https://github.com/fasrc/slurm_utils, for its example_jobs.
 """
 
-import sys, os, errno
+import sys, os, time, errno
 import unittest, mock
 
 try:
@@ -15,7 +15,7 @@ try:
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 	import slurmmon
-from slurmmon import jobs
+from slurmmon import util, jobs
 
 
 #dependency on slurm_utils
@@ -30,15 +30,32 @@ except OSError, e:
 	raise
 
 
-class SubmissionTestCase(unittest.TestCase):
-	def test_just_batch_script_serial_hello_world(self):
+class WorkflowTestCase(unittest.TestCase):
+	def test_batch_script_workflow_serial_hello_world(self):
 		j = jobs.Job(JobScript=open('hello_world.sbatch').read())
 
-		jobs.submit(j)
+		t_start = time.time()
 
+		#submit the job
+		jobs.submit(j)
+		
 		self.assertTrue(isinstance(int(j['JobID']), int),
-			"submitting a job did not result in an JobID that can be parsed as an int"
+			"submitting a job did not result in a JobID that can be parsed as an int"
 		)
+		self.assertEqual(j['State'], 'PENDING',
+			"newly submitted job is not PENDING"
+		)
+
+		#wait for it to finish
+		while j['State'] != 'COMPLETED':
+			jobs.update(j)
+			time.sleep(0.5)
+
+		t_end = time.time()
+
+		#something only found in sacct
+		self.assertTrue(j['CPUTime'] >= 0.0)  #(it's so short it usually actually is 00:00:00 in sacct)
+		self.assertTrue(j['CPUTime'] < t_end-t_start)
 
 
 if __name__=='__main__':

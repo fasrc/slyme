@@ -84,7 +84,7 @@ class LazyDict(dict):
 
 		#whether or not to update existing data when new data is presented as a 
 		#side-effect of computing extensions
-		self._overwrite = False
+		self._overwrite = True
 
 	def __getitem__(self, key):
 		"""__getitem__
