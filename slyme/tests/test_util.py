@@ -21,11 +21,11 @@ class ShTestCase(unittest.TestCase):
 
 	#basic runsh()
 	def test_runsh_string(self):
-		self.assertEqual(util.runsh('echo foo'), 'foo\n',
+		self.assertEqual(util.runsh('/bin/echo foo'), 'foo\n',
 			"runsh() does not work on sh code as a string"
 		)
 	def test_runsh_list(self):
-		self.assertEqual(util.runsh(['echo','foo']), 'foo\n',
+		self.assertEqual(util.runsh(['/bin/echo','foo']), 'foo\n',
 			"runsh() does not works on an argv list"
 		)
 	
@@ -44,13 +44,13 @@ class ShTestCase(unittest.TestCase):
 	#basic runsh_i()
 	def test_runsh_i_string(self):
 		self.assertEqual(
-			[line for line in util.runsh_i("echo -e 'foo\nbar'")],
+			[line for line in util.runsh_i("/bin/echo -e 'foo\nbar'")],
 			['foo\n', 'bar\n'],
 			"runsh_i() does not work on sh code as a string"
 		)
 	def test_runsh_list(self):
 		self.assertEqual(
-			[line for line in util.runsh_i(['echo', '-e', 'foo\nbar'])],
+			[line for line in util.runsh_i(['/bin/echo', '-e', 'foo\nbar'])],
 			['foo\n', 'bar\n'],
 			"runsh_i() does not work on an argv list"
 		)
@@ -64,7 +64,7 @@ class ShTestCase(unittest.TestCase):
 		)
 	def test_shquote_runsh(self):
 		self.assertEqual(
-			util.runsh('echo -n %s' % util.shquote(ShTestCase.funky_string)),
+			util.runsh('/bin/echo -n %s' % util.shquote(ShTestCase.funky_string)),
 			ShTestCase.funky_string,
 			"echo is not identity for a funky_string"
 		)
@@ -83,7 +83,7 @@ class ShTestCase(unittest.TestCase):
 	def test_sherrcheck_stderr(self):
 		"""Test that non-empty stderr raises an Exception."""
 		try:
-			util.runsh('echo foo >&2')
+			util.runsh('/bin/echo foo >&2')
 		except util.ShError, e:
 			self.assertEquals(e.stderr, 'foo\n',
 				"ShError does not include proper stderr"

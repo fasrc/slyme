@@ -43,7 +43,9 @@ scontrol_key_value_translations = {
 	#sacct's as closely as possible, so this is also basically a translation to 
 	#sacct key/value
 	
-	'UserID':
+	'JobId':
+		lambda k, v: ('JobID', v.split('(')[0]),
+	'UserId':
 		lambda k, v: ('User', v.split('(')[0]),
 	'JobState':
 		lambda k, v: ('State', v),
