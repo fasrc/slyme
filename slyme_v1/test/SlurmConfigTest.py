@@ -797,7 +797,7 @@ PartitionName=zorana Priority=10 \
         sconffile.close()
         
         os.environ['SLURM_CONF'] = SLURM_CONF_FILENAME
-        from slyme import SLURMCONFIG
+        from slyme_v1 import SLURMCONFIG
         
         self.slurmConfig = SLURMCONFIG
         

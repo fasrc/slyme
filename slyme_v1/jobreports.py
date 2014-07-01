@@ -14,7 +14,7 @@ Created on May 6, 2014
 import logging
 import re
 from datetime import datetime
-from slyme.util import slurmtime_to_seconds,MaxRSS_to_kB,runsh_i
+from slyme_v1.util import slurmtime_to_seconds,MaxRSS_to_kB,runsh_i
 
 
 logger = logging.getLogger('slyme')
