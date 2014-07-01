@@ -1,0 +1,52 @@
+#--- bulk records
+
+sacct_bulk_parsable.out
+	$ sacct --allusers --noheader --parsable2 \
+		--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Submit,Start,End,NodeList \
+		--starttime 06/26-00:00:00 --endtime 06/26-23:59:59 \
+		> sacct_bulk_parsable.out
+	
+	that --format must match jobs.keys_sacct
+
+
+#--- single records
+
+serial job
+	scontrol_single_serial_RUNNING.out
+		in slurm_utils/example_jobs/
+			temporarily add along sleep to hello_world.sbatch
+			$ sbatch < sleep_60s.sbatch
+
+		in slyme/tests/_mock_data/
+			$ scontrol --oneliner show job THAT_JOB_ID | tee scontrol_single_serial_RUNNING.out
+			(make sure the job is actually running)
+
+	sacct_single_serial_COMPLETED_parsable.out
+		$ sacct --noheader --parsable2 \
+			--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Submit,Start,End,NodeList \
+			--jobs SOME_JOB_ID
+			| tee sacct_single_serial_COMPLETED_parsable.out
+		
+		where SOME_JOB_ID is preferably the job from the submission above
+		
+		that --format must match jobs.keys_sacct
+
+parallel job
+	scontrol_single_parallel_RUNNING.out
+		in slurm_utils/example_jobs/
+			temporarily add along sleep to hello_world.sbatch
+			$ sbatch < cpu_user_parallel.sbatch
+
+		in slyme/tests/_mock_data/
+			$ scontrol --oneliner show job THAT_JOB_ID | tee scontrol_single_parallel_RUNNING.out
+			(make sure the job is actually running)
+
+	sacct_single_parallel_COMPLETED_parsable.out
+		$ sacct --noheader --parsable2 \
+			--format User,JobID,JobName,State,Partition,NCPUS,NNodes,CPUTime,TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Submit,Start,End,NodeList \
+			--jobs THAT_JOB_ID
+			| tee sacct_single_parallel_COMPLETED_parsable.out
+		
+		where SOME_JOB_ID is preferably the job from the submission above
+		
+		that --format must match jobs._sacct_format_parsable
