@@ -122,6 +122,7 @@ class x_sacct(lazydict.Extension):
 		'MaxRSS_kB',
 		'ReqMem_bytes_per_core',
 		'ReqMem_bytes_per_node',
+		'NodeList_str',
 	)
 	def __call__(self, JobID):
 		try:
@@ -162,6 +163,7 @@ class x_sacct(lazydict.Extension):
 					d['TotalCPU'] = slurmmon.slurmtime_to_seconds(dstep['TotalCPU'])
 					d['UserCPU'] = slurmmon.slurmtime_to_seconds(dstep['UserCPU'])
 					d['SystemCPU'] = slurmmon.slurmtime_to_seconds(dstep['SystemCPU'])
+					d['NodeList_str'] = dstep['NodeList']
 
 					continue
 				else:
@@ -273,6 +275,9 @@ class Job(lazydict.LazyDict):
 		
 		'NNodes',
 		#int
+
+		'NodeList_str'
+		#str, the compact represntation, e.g. host[18301-18302,18308,20208]
 
 		'CPUTime',
 		#seconds, float
@@ -469,6 +474,7 @@ def load_data_from_sacct_text_block(job, saccttext):
 				job['TotalCPU'] = slurmmon.slurmtime_to_seconds(TotalCPU)
 				job['UserCPU'] = slurmmon.slurmtime_to_seconds(UserCPU)
 				job['SystemCPU'] = slurmmon.slurmtime_to_seconds(SystemCPU)
+				job['NodeList_str'] = NodeList
 
 				continue
 			else:

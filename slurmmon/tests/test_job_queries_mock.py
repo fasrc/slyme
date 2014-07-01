@@ -20,7 +20,7 @@ class JobsTestCase(unittest.TestCase):
 	##this takes a long time and doesn't do anything useful yet
 	#def test_sacct_bulk(self):
 	#	with mock.patch('slurmmon.jobs._yield_raw_sacct_job_lines') as m:
-	#		m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_COMPLETED_day_parsable.out'))
+	#		m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 	#
 	#		for j in jobs.get_jobs():
 	#			print j
