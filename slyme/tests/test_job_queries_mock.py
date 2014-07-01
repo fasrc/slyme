@@ -8,11 +8,7 @@ import sys, os
 import unittest, mock
 from contextlib import nested  #deprecated in 2.7, but we're requiring only 2.6
 
-try:
-	import slyme
-except ImportError:
-	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slyme
+import slyme
 from slyme import jobs
 
 

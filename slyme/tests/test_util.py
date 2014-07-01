@@ -7,11 +7,7 @@
 import sys, os
 import unittest
 
-try:
-	import slyme
-except ImportError:
-	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slyme
+import slyme
 from slyme import util
 
 

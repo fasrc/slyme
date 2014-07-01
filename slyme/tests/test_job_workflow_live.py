@@ -10,11 +10,7 @@ This requires a clone of https://github.com/fasrc/slurm_utils, for its example_j
 import sys, os, time, errno
 import unittest, mock
 
-try:
-	import slyme
-except ImportError:
-	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slyme
+import slyme
 from slyme import util, jobs
 
 
