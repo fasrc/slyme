@@ -11,11 +11,11 @@ import sys, os, time, errno
 import unittest, mock
 
 try:
-	import slurmmon
+	import slyme
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slurmmon
-from slurmmon import util, jobs
+	import slyme
+from slyme import util, jobs
 
 
 #dependency on slurm_utils

@@ -9,17 +9,17 @@ import unittest, mock
 from contextlib import nested  #deprecated in 2.7, but we're requiring only 2.6
 
 try:
-	import slurmmon
+	import slyme
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slurmmon
-from slurmmon import jobs
+	import slyme
+from slyme import jobs
 
 
 class JobsTestCase(unittest.TestCase):
 	##this takes a long time and doesn't do anything useful yet
 	#def test_sacct_bulk(self):
-	#	with mock.patch('slurmmon.jobs._yield_raw_sacct_job_lines') as m:
+	#	with mock.patch('slyme.jobs._yield_raw_sacct_job_lines') as m:
 	#		m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 	#
 	#		for j in jobs.get_jobs():
@@ -27,7 +27,7 @@ class JobsTestCase(unittest.TestCase):
 	
 	def test_scontrol_vs_sacct_single(self):
 		j_scontrol = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
-		with mock.patch('slurmmon.jobs._yield_raw_scontrol_job_text_blocks') as m:
+		with mock.patch('slyme.jobs._yield_raw_scontrol_job_text_blocks') as m:
 			#have scontrol return mock data for one job
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'scontrol_single_parallel_RUNNING.out'))
 	
@@ -38,8 +38,8 @@ class JobsTestCase(unittest.TestCase):
 
 		j_sacct = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
 		with nested(
-			mock.patch('slurmmon.jobs._yield_raw_scontrol_job_text_blocks'),
-		    mock.patch('slurmmon.jobs._yield_raw_sacct_job_lines')
+			mock.patch('slyme.jobs._yield_raw_scontrol_job_text_blocks'),
+		    mock.patch('slyme.jobs._yield_raw_sacct_job_lines')
 			) as (m1, m2):
 		
 			#have scontrol return no data, so queries fall back on sacct

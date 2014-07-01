@@ -2,12 +2,12 @@
 # Harvard FAS Research Computing
 # All rights reserved.
 
-"""slurmmon job handling"""
+"""slyme job handling"""
 
 
 import sys, re
-import slurmmon
-from slurmmon import config, util, lazydict
+import slyme
+from slyme import config, util, lazydict
 
 
 #sacct format; you can change _sacct_format_readable at will, but changing _sacct_format_parsable will break the code
@@ -54,9 +54,9 @@ scontrol_key_value_translations = {
 	'NumCPUs':
 		lambda k, v: ('NCPUS', v),
 	'MinMemoryNode':
-		lambda k, v: ('ReqMem_bytes_per_node', slurmmon.slurmmemory_to_kB(v)),
+		lambda k, v: ('ReqMem_bytes_per_node', slyme.slurmmemory_to_kB(v)),
 	'MinMemoryCPU':
-		lambda k, v: ('ReqMem_bytes_per_core', slurmmon.slurmmemory_to_kB(v)),
+		lambda k, v: ('ReqMem_bytes_per_core', slyme.slurmmemory_to_kB(v)),
 }
 
 class x_scontrol(lazydict.Extension):
@@ -159,10 +159,10 @@ class x_sacct(lazydict.Extension):
 					d['Partition'] = dstep['Partition']
 					d['NCPUS'] = int(dstep['NCPUS'])
 					d['NNodes'] = int(dstep['NNodes'])
-					d['CPUTime'] = slurmmon.slurmtime_to_seconds(dstep['CPUTime'])
-					d['TotalCPU'] = slurmmon.slurmtime_to_seconds(dstep['TotalCPU'])
-					d['UserCPU'] = slurmmon.slurmtime_to_seconds(dstep['UserCPU'])
-					d['SystemCPU'] = slurmmon.slurmtime_to_seconds(dstep['SystemCPU'])
+					d['CPUTime'] = slyme.slurmtime_to_seconds(dstep['CPUTime'])
+					d['TotalCPU'] = slyme.slurmtime_to_seconds(dstep['TotalCPU'])
+					d['UserCPU'] = slyme.slurmtime_to_seconds(dstep['UserCPU'])
+					d['SystemCPU'] = slyme.slurmtime_to_seconds(dstep['SystemCPU'])
 					d['NodeList_str'] = dstep['NodeList']
 
 					continue
@@ -185,7 +185,7 @@ class x_sacct(lazydict.Extension):
 						
 					#MaxRSS
 					if dstep['MaxRSS'] is not None:
-						d['MaxRSS_kB'] = max(d['MaxRSS_kB'], slurmmon.slurmmemory_to_kB(dstep['MaxRSS']))
+						d['MaxRSS_kB'] = max(d['MaxRSS_kB'], slyme.slurmmemory_to_kB(dstep['MaxRSS']))
 		except Exception, e:
 			##hiding the actual error only makes things difficult
 			#raise Exception("unable to parse sacct job text [%r]: %r\n" % (saccttext, e))
@@ -229,7 +229,7 @@ class x_JobScriptPreview(lazydict.Extension):
 	source = ('JobScript',)
 	target = ('JobScriptPreview',)
 	def __call__(self, JobScript):
-		return slurmmon.job_script_preview(JobScript),
+		return slyme.job_script_preview(JobScript),
 
 class x_SacctReport(lazydict.Extension):
 	source= ('JobID',)
@@ -470,10 +470,10 @@ def load_data_from_sacct_text_block(job, saccttext):
 				job['Partition'] = Partition
 				job['NCPUS'] = int(NCPUS)
 				job['NNodes'] = int(NNodes)
-				job['CPUTime'] = slurmmon.slurmtime_to_seconds(CPUTime)
-				job['TotalCPU'] = slurmmon.slurmtime_to_seconds(TotalCPU)
-				job['UserCPU'] = slurmmon.slurmtime_to_seconds(UserCPU)
-				job['SystemCPU'] = slurmmon.slurmtime_to_seconds(SystemCPU)
+				job['CPUTime'] = slyme.slurmtime_to_seconds(CPUTime)
+				job['TotalCPU'] = slyme.slurmtime_to_seconds(TotalCPU)
+				job['UserCPU'] = slyme.slurmtime_to_seconds(UserCPU)
+				job['SystemCPU'] = slyme.slurmtime_to_seconds(SystemCPU)
 				job['NodeList_str'] = NodeList
 
 				continue
@@ -495,7 +495,7 @@ def load_data_from_sacct_text_block(job, saccttext):
 					job['ReqMem_bytes_per_core'] = ReqMem_bytes_per_core
 					
 				#MaxRSS
-				MaxRSS_kB = slurmmon.slurmmemory_to_kB(MaxRSS)
+				MaxRSS_kB = slyme.slurmmemory_to_kB(MaxRSS)
 				if job.has_key('MaxRSS_kB'):
 					MaxRSS_kB = max(job['MaxRSS_kB'], MaxRSS_kB)
 				job['MaxRSS_kB'] = MaxRSS_kB

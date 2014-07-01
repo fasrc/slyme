@@ -8,11 +8,11 @@ import sys, os
 import unittest, mock
 
 try:
-	import slurmmon
+	import slyme
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slurmmon
-from slurmmon import util, jobs
+	import slyme
+from slyme import util, jobs
 
 
 #a JobID that is no longer in scontrol but is in sacct
@@ -22,7 +22,7 @@ old_JobID = '77454'
 class JobsTestCase(unittest.TestCase):
 	def test_scontrol_invalid_JobID(self):
 		#mock sacct to make sure that doesn't pick up the job either
-		with mock.patch('slurmmon.jobs._yield_raw_sacct_job_lines') as m:
+		with mock.patch('slyme.jobs._yield_raw_sacct_job_lines') as m:
 			m.return_value = open('/dev/null','r')
 
 			j = jobs.Job(JobID='1')  #assuming JobID 1 has aged out of scontrol

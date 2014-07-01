@@ -2,12 +2,12 @@
 # Harvard FAS Research Computing
 # All rights reserved.
 
-"""slurmmon node handling"""
+"""slyme node handling"""
 
 
 import socket
-import slurmmon
-from slurmmon import config, util, lazydict
+import slyme
+from slyme import config, util, lazydict
 
 
 class Node(lazydict.LazyDict):
@@ -108,7 +108,7 @@ class Node(lazydict.LazyDict):
 				elif kv.startswith('CPUAlloc'):
 					self['CPUAlloc'] = int(kv.split('=')[1])
 				elif kv.startswith('AllocMem'):
-					self['AllocMem_kB'] = slurmmon.AllocMem_to_kB(kv.split('=')[1])
+					self['AllocMem_kB'] = slyme.AllocMem_to_kB(kv.split('=')[1])
 				#elif kv.startswith('AllocMem'):
 				#	memory = int(kv.split('=')[1]) * 1024
 				#	if cores is not None:

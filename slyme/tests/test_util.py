@@ -8,11 +8,11 @@ import sys, os
 import unittest
 
 try:
-	import slurmmon
+	import slyme
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slurmmon
-from slurmmon import util
+	import slyme
+from slyme import util
 
 
 class ShTestCase(unittest.TestCase):

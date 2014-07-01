@@ -17,7 +17,7 @@ serial job
 			temporarily add along sleep to hello_world.sbatch
 			$ sbatch < sleep_60s.sbatch
 
-		in slurmmon/tests/_mock_data/
+		in slyme/tests/_mock_data/
 			$ scontrol --oneliner show job THAT_JOB_ID | tee scontrol_single_serial_RUNNING.out
 			(make sure the job is actually running)
 
@@ -37,7 +37,7 @@ parallel job
 			temporarily add along sleep to hello_world.sbatch
 			$ sbatch < cpu_user_parallel.sbatch
 
-		in slurmmon/tests/_mock_data/
+		in slyme/tests/_mock_data/
 			$ scontrol --oneliner show job THAT_JOB_ID | tee scontrol_single_parallel_RUNNING.out
 			(make sure the job is actually running)
 

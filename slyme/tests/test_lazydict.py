@@ -8,11 +8,11 @@ import time
 import unittest, mock
 
 try:
-	import slurmmon
+	import slyme
 except ImportError:
 	sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-	import slurmmon
-from slurmmon import lazydict
+	import slyme
+from slyme import lazydict
 
 
 #--- an example LazyDict

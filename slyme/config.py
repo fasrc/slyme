@@ -2,11 +2,11 @@
 # Harvard FAS Research Computing
 # All rights reserved.
 
-"""slurmmon configuration"""
+"""slyme configuration"""
 
 
 import socket
-from slurmmon import util
+from slyme import util
 #(pygments import attempts are below)
 
 
@@ -20,7 +20,7 @@ def filter_whitespace_cpu_job(job):
 	"""Approve or veto a job as a cpu waster.
 	
 	This should return False if the job should be excluded from the report, or 
-	True otherwise.  job is a slurmmon.jobs.Job.  Note that other slurmmon 
+	True otherwise.  job is a slyme.jobs.Job.  Note that other slyme 
 	configuration and functionality take care of the main job characteristics.  
 	This is just an opportunity to account for users, partitions, etc. that are 
 	incorrectly being flagged or otherwise have been given a "pass".
@@ -40,7 +40,7 @@ def whitespace_report_top_html():
 	"""Return extra html to include at the top of the whitespace report.
 	
 	For example, links to the allocation vs untilization plots from 
-	slurmmon-ganglia.
+	slyme-ganglia.
 	"""
 	if FASRC:
 		return """\

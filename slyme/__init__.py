@@ -2,10 +2,10 @@
 # Harvard FAS Research Computing
 # All rights reserved.
 
-"""slurmmon -- a slurm monitor"""
+"""slyme -- Slurm pYthon Modules based on the Executables"""
 
 
-from slurmmon import config
+from slyme import config
 
 
 #--- misc
