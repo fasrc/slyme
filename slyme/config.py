@@ -5,13 +5,28 @@
 """slyme configuration"""
 
 
-import socket
+import os, socket
 from slyme import util
 #(pygments import attempts are below)
 
 
 #make it work out of the box both for FASRC and in general
 FASRC = socket.gethostname().endswith('.rc.fas.harvard.edu')
+
+#we also have dev and prod environments
+FASRC_ENV = 'dev'  #'dev' or 'prod'
+try:
+	with open('/etc/slurm/slurm.conf','r') as f:
+		for line in f.readlines():
+			if line.startswith('ControlMachine'):
+				if line.split('=')[1].strip()=='slurm-test':
+					FASRC_ENV='dev'
+					break
+				if line.split('=')[1].strip()=='holy-slurm01':
+					FASRC_ENV='prod'
+					break
+except IOError:
+	pass
 
 
 #--- whitespace reporting
@@ -73,7 +88,11 @@ def get_job_script(JobID):
 	"""Return the job payload script, or raise NotImplemented if unavailable."""
 	if FASRC:
 		#at FASRC, we have our slurmctld prolog store the script in a database
-		shv = ['mysql', 'slurm_jobscripts', '-BNr', '-e', 'select script from jobscripts where id_job = %d;' % int(JobID)]
+		if FASRC_ENV=='prod':
+			defaults_file = os.path.abspath(os.path.join(__file__, '..', 'local', 'my.cnf.get_job_script.prod'))
+		else:
+			defaults_file = os.path.abspath(os.path.join(__file__, '..', 'local', 'my.cnf.get_job_script.dev'))
+		shv = ['mysql', '--defaults-file=%s' % defaults_file, '-BNr', '-e', 'select script from jobscripts where id_job = %d;' % int(JobID)]
 		return util.runsh(shv)
 	else:
 		raise NotImplementedError("job script retrieval requires implementation in config.py")
