@@ -6,3 +6,5 @@ mocked:
 live:
 	python test_job_queries_live.py
 	python test_job_workflow_live.py
+
+all: mocked live

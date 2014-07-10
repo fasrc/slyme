@@ -39,7 +39,7 @@ class WorkflowTestCase(unittest.TestCase):
 			"submitting a job did not result in a JobID that can be parsed as an int"
 		)
 		self.assertEqual(j['State'], 'PENDING',
-			"newly submitted job is not PENDING"
+			"newly submitted job is not PENDING, it's %s" % j['State']
 		)
 
 		#wait for it to finish
