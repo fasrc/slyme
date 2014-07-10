@@ -84,7 +84,10 @@ class x_scontrol_raw_scontrol_text_to_jobatts(lazydict.Extension):
 
 		try:
 			for kv in _raw_scontrol_text.split():
-				k, v = kv.split('=',1)
+				try:
+					k, v = kv.split('=',1)
+				except ValueError:
+					continue
 				try:
 					k, v = scontrol_key_value_translations[k](k, v)
 				except KeyError:
