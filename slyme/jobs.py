@@ -49,7 +49,7 @@ def _yield_raw_scontrol_text_per_job(jobs=None):
 
 	return util.runsh_i(shv)
 
-class x_scontrol_raw_scontrol_text(lazydict.Extension):
+class x_scontrol_JobID_to_raw_scontrol_text(lazydict.Extension):
 	source = ('JobID',)
 	target = ('_raw_scontrol_text',)
 	def __call__(self, JobID):
@@ -65,9 +65,10 @@ class x_scontrol_raw_scontrol_text(lazydict.Extension):
 			return (None,)
 		return (_raw_scontrol_text,)
 
-class x_scontrol_jobatts(lazydict.Extension):
+class x_scontrol_raw_scontrol_text_to_jobatts(lazydict.Extension):
 	source = ('_raw_scontrol_text',)
 	target = (
+		'JobID',
 		'User',
 		'JobName',
 		'State',
@@ -166,7 +167,7 @@ def _yield_raw_sacct_text_per_job(state=None, users=None, jobs=None, starttime=N
 	if text!='':
 		yield text
 
-class x_sacct_raw_sacct_text(lazydict.Extension):
+class x_sacct_JobID_to_raw_sacct_text(lazydict.Extension):
 	source = ('JobID',)
 	target = ('_raw_sacct_text',)
 	def __call__(self, JobID):
@@ -176,7 +177,7 @@ class x_sacct_raw_sacct_text(lazydict.Extension):
 			return (None,)
 		return (_raw_sacct_text,)
 
-class x_sacct_jobatts(lazydict.Extension):
+class x_sacct_raw_sacct_text_to_jobatts(lazydict.Extension):
 	source = ('_raw_sacct_text',)
 	target = (
 		'JobID',
@@ -407,10 +408,10 @@ class Job(lazydict.LazyDict):
 	]
 
 	extensions = [
-		x_scontrol_raw_scontrol_text(),
-		x_scontrol_jobatts(),
-		x_sacct_raw_sacct_text(),
-		x_sacct_jobatts(),
+		x_scontrol_raw_scontrol_text_to_jobatts(),
+		x_sacct_raw_sacct_text_to_jobatts(),
+		x_scontrol_JobID_to_raw_scontrol_text(),
+		x_sacct_JobID_to_raw_sacct_text(),
 		x_ReqMem_bytes_total_from_per_core(),
 		x_ReqMem_bytes_total_from_per_node(),
 		x_CPU_Efficiency(),
@@ -463,10 +464,17 @@ def update(job):
 
 #--- job querying
 
-def get_jobs(state=None, starttime=None, endtime=None, filter=lambda j: True):
+def get_jobs_historical(state=None, starttime=None, endtime=None, filter=lambda j: True):
 	"""Yield Job objects that match the given parameters."""
 	for _raw_sacct_text in _yield_raw_sacct_text_per_job(state=state, starttime=starttime, endtime=endtime):
 		j = Job(_raw_sacct_text=_raw_sacct_text)
+		if filter(j):
+			yield j
+
+def get_jobs_live(state=None, starttime=None, endtime=None, filter=lambda j: True):
+	"""Yield Job objects that match the given parameters."""
+	for _raw_scontrol_text in _yield_raw_scontrol_text_per_job():
+		j = Job(_raw_scontrol_text=_raw_scontrol_text)
 		if filter(j):
 			yield j
 

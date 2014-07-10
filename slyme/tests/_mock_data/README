@@ -8,6 +8,10 @@ sacct_bulk_parsable.out
 	
 	that --format must match jobs.keys_sacct
 
+scontrol_bulk_parsable.out
+	$ scontrol --oneliner show job \
+		> scontrol_bulk_parsable.out
+
 
 #--- single records
 

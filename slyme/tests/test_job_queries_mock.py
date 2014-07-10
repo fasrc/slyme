@@ -13,16 +13,29 @@ from slyme import jobs
 
 
 class JobsTestCase(unittest.TestCase):
+	'''
+	def test_control_bulk(self):
+		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
+			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'scontrol_bulk_parsable.out'))
+	
+			i = 0
+			for j in jobs.get_jobs_live():
+				j['JobID']
+				i += 1
+				if i == 100: break  #takes too long to go through them all
+	'''
+	
 	def test_sacct_bulk(self):
 		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 	
 			i = 0
-			for j in jobs.get_jobs():
+			for j in jobs.get_jobs_historical():
 				j['JobID']
 				i += 1
 				if i == 100: break  #takes too long to go through them all
 
+	'''
 	def test_scontrol_vs_sacct_single(self):
 		j_scontrol = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
 		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
@@ -58,6 +71,7 @@ class JobsTestCase(unittest.TestCase):
 					except KeyError:
 						v = 'N/A'
 					#print '%s: %s' % (k, v)
+	'''
 
 
 if __name__=='__main__':
