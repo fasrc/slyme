@@ -6,8 +6,10 @@
 
 
 import sys, re
+
+from dio import lazydict
 import slyme
-from slyme import config, util, lazydict
+from slyme import config, util
 
 
 #=== extensions

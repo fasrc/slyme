@@ -7,7 +7,8 @@
 
 import socket
 import slyme
-from slyme import config, util, lazydict
+from dio import lazydict
+from slyme import config, util
 
 
 class Node(lazydict.LazyDict):
