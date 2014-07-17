@@ -18,7 +18,7 @@ from slyme import config, util
 
 #functions to translate scontrol key/value pairs to those used by the Job 
 #(which match sacct's as closely as possible, so this is also basically a 
-#translation to sacct key/value
+#translation from scontrol key/value to sacct key/value)
 scontrol_key_value_translations = {
 	'JobId':
 		lambda k, v: ('JobID', v.split('(')[0]),
@@ -105,7 +105,7 @@ class x_scontrol_raw_scontrol_text_to_jobatts(lazydict.Extension):
 
 #--- sacct queries
 
-#the keys and formatting used when calling sacct
+#the keys and (if applicable) formatting used when calling sacct
 keys_sacct = (
 	('User', '%-12'),
 	('JobID', '%-15'),
@@ -274,7 +274,7 @@ class x_sacct_SacctReport(lazydict.Extension):
 		return util.runsh(shv).rstrip(),
 
 
-#--- jobscript db queries
+#--- job script db (a custom fasrc Slurm feature)
 
 class x_JobScript(lazydict.Extension):
 	source= ('JobID',)
@@ -458,6 +458,17 @@ def submit(job):
 	return job
 
 def update(job):
+	"""Update the given job by re-querying its state.
+
+	Ths modifies the job:
+		* pops stale keys
+		* updates stale values of other keys
+
+	The job's _laziness must not be LAZINESS_LOCKED, else this'll raise KeyError.
+
+	This also assumes _overwrite is OVERWRITE_UPDATE so that other stale data is overwritten.
+	More work is needed on this aspect.
+	"""
 	for key in ('State', '_raw_scontrol_text', '_raw_sacct_text'):
 		try:
 			job.pop(key)
@@ -483,25 +494,25 @@ def get_jobs_live(state=None, starttime=None, endtime=None, filter=lambda j: Tru
 		if filter(j):
 			yield j
 
-def get_jobs_running_on_host(hostname):
-	"""Return jobs running on the given host."""
-	shv = ['squeue', '-o', '%A %u %C %D', '--noheader', '-w', hostname]
-	stdout = util.runsh(shv).strip()
-	for line in stdout.split('\n'):
-		line = line.strip()
-		try:
-			JobID, User, NCPUS, NNodes = line.split()
-
-			j = Job()
-			j['JobID'] = JobID
-			j['User'] = User
-			j['NCPUS'] = NCPUS
-			j['NNodes'] = NNodes
-
-			yield j
-
-		except Exception, e:
-			sys.stderr.write("*** ERROR *** unable to parse squeue job text [%r]: %s\n" % (line, e))
+#def get_jobs_running_on_host(hostname):
+#	"""Return jobs running on the given host."""
+#	shv = ['squeue', '-o', '%A %u %C %D', '--noheader', '-w', hostname]
+#	stdout = util.runsh(shv).strip()
+#	for line in stdout.split('\n'):
+#		line = line.strip()
+#		try:
+#			JobID, User, NCPUS, NNodes = line.split()
+#
+#			j = Job()
+#			j['JobID'] = JobID
+#			j['User'] = User
+#			j['NCPUS'] = NCPUS
+#			j['NNodes'] = NNodes
+#
+#			yield j
+#
+#		except Exception, e:
+#			sys.stderr.write("*** ERROR *** unable to parse squeue job text [%r]: %s\n" % (line, e))
 
 
 #--- utilities
