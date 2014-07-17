@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2014
+# Harvard FAS Research Computing
+# All rights reserved.
+
+import sys
+from slyme.jobs import Job
+
+for JobID in sys.argv[1:]:
+		j = Job()
+		j['JobID'] = JobID
+		print j['JobScript'].strip()
