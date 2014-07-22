@@ -16,8 +16,8 @@ from slyme import config, util
 
 #--- scontrol queries
 
-#functions to translate scontrol key/value pairs to those used by the Job 
-#(which match sacct's as closely as possible, so this is also basically a 
+#functions to translate scontrol key/value pairs to those used by the Job
+#(which match sacct's as closely as possible, so this is also basically a
 #translation from scontrol key/value to sacct key/value)
 scontrol_key_value_translations = {
 	'JobId':
@@ -41,7 +41,7 @@ scontrol_key_value_translations = {
 def _yield_raw_scontrol_text_per_job(jobs=None):
 	"""Yields strings of scontrol text for each job.
 
-	These are just single-line, not text blocks as the name implies, but it's 
+	These are just single-line, not text blocks as the name implies, but it's
 	named that way for consistency (the names should be changed, consistently).
 	"""
 	shv = ['scontrol', '--oneliner', 'show', 'job' ]
@@ -129,7 +129,7 @@ keys_sacct = (
 def _yield_raw_sacct_lines(state=None, users=None, jobs=None, starttime=None, endtime=None):
 	"""Yields lines from an sacct query.
 
-	Note that jobs span several lines, and this yields lines one-by-one.  See 
+	Note that jobs span several lines, and this yields lines one-by-one.  See
 	_yield_raw_sacct_text_per_job for something more useful.
 	"""
 	shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]

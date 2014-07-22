@@ -33,11 +33,11 @@ except IOError:
 
 def filter_whitespace_cpu_job(job):
 	"""Approve or veto a job as a cpu waster.
-	
-	This should return False if the job should be excluded from the report, or 
-	True otherwise.  job is a slyme.jobs.Job.  Note that other slyme 
-	configuration and functionality take care of the main job characteristics.  
-	This is just an opportunity to account for users, partitions, etc. that are 
+
+	This should return False if the job should be excluded from the report, or
+	True otherwise.  job is a slyme.jobs.Job.  Note that other slyme
+	configuration and functionality take care of the main job characteristics.
+	This is just an opportunity to account for users, partitions, etc. that are
 	incorrectly being flagged or otherwise have been given a "pass".
 	"""
 	if FASRC:
@@ -53,8 +53,8 @@ def filter_whitespace_cpu_node(job):
 
 def whitespace_report_top_html():
 	"""Return extra html to include at the top of the whitespace report.
-	
-	For example, links to the allocation vs untilization plots from 
+
+	For example, links to the allocation vs untilization plots from
 	slyme-ganglia.
 	"""
 	if FASRC:
@@ -85,7 +85,10 @@ except ImportError:
 		return '<pre>%s</pre>' % sh
 
 def get_job_script(JobID):
-	"""Return the job payload script, or raise NotImplemented if unavailable."""
+	"""Return the job payload script, or raise NotImplemented if unavailable.
+
+	Return None if there is no job script.
+	"""
 	if FASRC:
 		#at FASRC, we have our slurmctld prolog store the script in a database
 		if FASRC_ENV=='prod':
@@ -93,14 +96,16 @@ def get_job_script(JobID):
 		else:
 			defaults_file = os.path.abspath(os.path.join(__file__, '..', 'local', 'my.cnf.get_job_script.dev'))
 		shv = ['mysql', '--defaults-file=%s' % defaults_file, '-BNr', '-e', 'select script from jobscripts where id_job = %d;' % int(JobID)]
-		return util.runsh(shv)
+		stdout = util.runsh(shv)
+		if stdout=='': return None
+		return stdout
 	else:
 		raise NotImplementedError("job script retrieval requires implementation in config.py")
 
 def job_script_line_is_interesting(line):
 	"""Return whether or not the line of text is worthwhile as a job script preview.
-	
-	The given line will be stripped of leading and trailing whitespace and will 
+
+	The given line will be stripped of leading and trailing whitespace and will
 	not be the empty string or a comment.
 	"""
 	for s in (

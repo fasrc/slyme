@@ -7,7 +7,14 @@
 import sys
 from slyme.jobs import Job
 
+exit_status = 0
+
 for JobID in sys.argv[1:]:
 		j = Job()
 		j['JobID'] = JobID
-		print j['JobScript'].strip()
+		try:
+			print j['JobScript'].strip()
+		except KeyError:
+			sys.stderr.write("*** ERROR *** no JobScript for JobID [%s]\n" % JobID)
+
+sys.exit(exit_status)
