@@ -16,5 +16,6 @@ for JobID in sys.argv[1:]:
 			print j['JobScript'].strip()
 		except KeyError:
 			sys.stderr.write("*** ERROR *** no JobScript for JobID [%s]\n" % JobID)
+			exit_status = 1
 
 sys.exit(exit_status)
