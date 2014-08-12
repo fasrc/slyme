@@ -5,7 +5,7 @@
 """slyme job handling"""
 
 
-import sys, re
+import sys, os, re
 
 from dio import lazydict, processor
 import slyme
@@ -44,12 +44,17 @@ def _yield_raw_scontrol_text_per_job(jobs=None):
 	These are just single-line, not text blocks as the name implies, but it's
 	named that way for consistency (the names should be changed, consistently).
 	"""
-	shv = ['scontrol', '--oneliner', 'show', 'job' ]
 
-	if jobs is not None:
-		shv.extend(jobs)
+	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
+	if mockdir is not None:
+		return open(os.path.join(mockdir, 'scontrol_bulk_parsable.out'))
+	else:
+		shv = ['scontrol', '--oneliner', 'show', 'job' ]
 
-	return util.runsh_i(shv)
+		if jobs is not None:
+			shv.extend(jobs)
+
+		return util.runsh_i(shv)
 
 class x_scontrol_JobID_to_raw_scontrol_text(lazydict.Extension):
 	source = ('JobID',)
@@ -132,26 +137,31 @@ def _yield_raw_sacct_lines(state=None, users=None, jobs=None, starttime=None, en
 	Note that jobs span several lines, and this yields lines one-by-one.  See
 	_yield_raw_sacct_text_per_job for something more useful.
 	"""
-	shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]
 
-	if state is not None:
-		shv.extend(['--state', state])
-
-	if jobs is not None:
-		shv.extend(['--jobs', ','.join(jobs)])
-
-	if users is not None:
-		shv.extend(['--user', ','.join(users)])
+	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
+	if mockdir is not None:
+		return open(os.path.join(mockdir, 'sacct_bulk_parsable.out'))
 	else:
-		shv.extend(['--allusers'])
+		shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]
 
-	if starttime is not None:
-		shv.extend(['--starttime', starttime.strftime('%m/%d-%H:%M')])
+		if state is not None:
+			shv.extend(['--state', state])
 
-	if endtime is not None:
-		shv.extend(['--endtime', endtime.strftime('%m/%d-%H:%M')])
+		if jobs is not None:
+			shv.extend(['--jobs', ','.join(jobs)])
 
-	return util.runsh_i(shv)
+		if users is not None:
+			shv.extend(['--user', ','.join(users)])
+		else:
+			shv.extend(['--allusers'])
+
+		if starttime is not None:
+			shv.extend(['--starttime', starttime.strftime('%m/%d-%H:%M')])
+
+		if endtime is not None:
+			shv.extend(['--endtime', endtime.strftime('%m/%d-%H:%M')])
+
+		return util.runsh_i(shv)
 
 def _yield_raw_sacct_text_per_job(state=None, users=None, jobs=None, starttime=None, endtime=None):
 	"""Yields multi-line strings of sacct text for each job.
@@ -334,7 +344,7 @@ class Job(lazydict.LazyDict):
 	In particular, it is not meant for job control.
 	"""
 
-	keys = [
+	_keys = [
 		#=== data from sacct
 
 		#--- info from main job account line

@@ -64,7 +64,7 @@ class JobsTestCase(unittest.TestCase):
 			j_sacct['JobName']
 			j_sacct['State']
 
-			for k in jobs.Job.keys:
+			for k in jobs.Job._keys:
 				if k not in ('JobScript', 'JobScriptPreview', 'SacctReport'):  #these are too verbose
 					try:
 						v = j_sacct[k]

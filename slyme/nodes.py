@@ -18,7 +18,7 @@ class Node(lazydict.LazyDict):
 	Attributes are named to match scontrol's variables very closely.
 	"""
 	
-	keys = [
+	_keys = [
 		#=== scontrol data
 
 		#
