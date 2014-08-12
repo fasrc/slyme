@@ -8,6 +8,16 @@
 from slyme import config
 
 
+#--- setup logging
+
+import logging
+#(logging.NullHandler was introduced in 2.7, and this code is 2.6 compatible)
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+logging.getLogger('slyme').addHandler(NullHandler())
+
+
 #--- misc
 
 def slurmtime_to_seconds(tstr):

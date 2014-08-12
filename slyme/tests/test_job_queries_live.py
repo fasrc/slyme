@@ -10,10 +10,13 @@ import unittest, mock
 import slyme
 from slyme import util, jobs
 
+import settings
+
 
 #a JobID that is no longer in scontrol but is in sacct
 #the job must be COMPLETED
 old_JobID = '77454'
+
 
 class JobsTestCase(unittest.TestCase):
 	def test_scontrol_invalid_JobID(self):

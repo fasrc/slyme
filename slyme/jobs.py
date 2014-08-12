@@ -7,7 +7,7 @@
 
 import sys, re
 
-from dio import lazydict
+from dio import lazydict, processor
 import slyme
 from slyme import config, util
 
@@ -493,6 +493,12 @@ def get_jobs_live(state=None, starttime=None, endtime=None, filter=lambda j: Tru
 		j = Job(_raw_scontrol_text=_raw_scontrol_text)
 		if filter(j):
 			yield j
+
+@processor
+def jobs(out=None, err=None):
+	"""Produce jobs, currently just historical jobs."""
+	for j in get_jobs_historical():
+		out.send(j)
 
 #def get_jobs_running_on_host(hostname):
 #	"""Return jobs running on the given host."""

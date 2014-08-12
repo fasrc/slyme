@@ -13,6 +13,8 @@ import unittest, mock
 import slyme
 from slyme import util, jobs
 
+import settings
+
 
 class SankeyTestCase(unittest.TestCase):
 	def test_sacct_bulk(self):

@@ -10,6 +10,8 @@ import unittest
 import slyme
 from slyme import util
 
+import settings
+
 
 class ShTestCase(unittest.TestCase):
 	funky_string = r"""foo'bar "more" \' \" \n zzz"""
@@ -24,7 +26,7 @@ class ShTestCase(unittest.TestCase):
 		self.assertEqual(util.runsh(['/bin/echo','foo']), 'foo\n',
 			"runsh() does not works on an argv list"
 		)
-	
+
 	#runsh() with stdinstr
 	def test_runsh(self):
 		self.assertEqual(util.runsh('cat', inputstr='foo'), 'foo',
@@ -34,7 +36,7 @@ class ShTestCase(unittest.TestCase):
 		"""That runsh_with_stdin() works on argv list."""
 		self.assertEqual(util.runsh(['cat',], inputstr='foo'), 'foo',
 			"runsh does not work on an argv list, when providing stdin"
-			
+
 		)
 
 	#basic runsh_i()
@@ -64,7 +66,7 @@ class ShTestCase(unittest.TestCase):
 			ShTestCase.funky_string,
 			"echo is not identity for a funky_string"
 		)
-	
+
 	#sherrcheck()
 	def test_sherrcheck_status(self):
 		"""Test that a non-zero exit status raises an Exception."""

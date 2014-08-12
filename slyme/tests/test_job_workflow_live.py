@@ -13,6 +13,8 @@ import unittest, mock
 import slyme
 from slyme import util, jobs
 
+import settings
+
 
 #dependency on slurm_utils
 slurm_utils_example_jobs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../slurm_utils/example_jobs/'))

@@ -5,7 +5,7 @@
 """general utilities"""
 
 
-import os, select, subprocess, socket
+import os, select, subprocess, socket, logging
 
 
 #--- basic resource utilization
@@ -16,10 +16,10 @@ def get_hostname():
 
 def get_cpu():
 	"""Return the CPU capacity and usage on this host.
-	
+
 	The returns a two-item list:
 	[total number of cores (int), number of running tasks (int)]
-	
+
 	This is just a normal resource computation, independent of Slurm.
 	The number of running tasks is from the 4th colum of /proc/loadavg;
 	it's decremented by one in order to account for this process asking for it.
@@ -28,18 +28,18 @@ def get_cpu():
 	with open('/proc/loadavg','r') as f:
 		#e.g. 52.10 52.07 52.04 53/2016 54847 -> 53-1 = 52
 		used = max(int(f.read().split()[3].split('/')[0]) - 1, 0)
-	
+
 	with open('/proc/cpuinfo','r') as f:
 		total = 0
 		for l in f.readlines():
 			if l.startswith('processor'):
 				total += 1
-	
+
 	return total, used
 
 def get_mem():
 	"""Return the memory capacity and usage on this host.
-	
+
 	This returns a two-item list:
 	[total memory in kB (int), used memory in kB (int)]
 
@@ -77,7 +77,7 @@ class ShError(Exception):
 def shquote(text):
 	"""Return the given text as a single, safe string in sh code.
 
-	Note that this leaves literal newlines alone; sh and bash are fine with 
+	Note that this leaves literal newlines alone; sh and bash are fine with
 	that, but other tools may require special handling.
 	"""
 	return "'%s'" % text.replace("'", r"'\''")
@@ -85,8 +85,8 @@ def shquote(text):
 def sherrcheck(sh=None, stderr=None, returncode=None, verbose=True):
 	"""Raise an exception if the parameters indicate an error.
 
-	This raises an Exception if stderr is non-empty, even if returncode is 
-	zero.  Set verbose to False to keep sh and stderr from appearing in the 
+	This raises an Exception if stderr is non-empty, even if returncode is
+	zero.  Set verbose to False to keep sh and stderr from appearing in the
 	Exception.
 	"""
 	if (returncode is not None and returncode!=0) or (stderr is not None and stderr!=''):
@@ -114,13 +114,15 @@ def runsh(sh, inputstr=None):
 		shell=True
 	else:
 		shell=False
-	
+
 	if inputstr is None:
 		stdin = open('/dev/null', 'r')
 		communicate_args = ()
 	else:
 		stdin = subprocess.PIPE
 		communicate_args = (inputstr,)
+
+	logging.getLogger('slyme.subprocess').debug(repr(sh))
 
 	p = subprocess.Popen(
 		sh,
@@ -135,8 +137,8 @@ def runsh(sh, inputstr=None):
 
 def runsh_i(sh):
 	"""Run shell code and yield stdout lines.
-	
-	This raises an Exception if exit status is non-zero or stderr is non-empty. 
+
+	This raises an Exception if exit status is non-zero or stderr is non-empty.
 	Be sure to fully iterate this or you will probably leave orphans.
 	"""
 	BLOCK_SIZE = 4096
