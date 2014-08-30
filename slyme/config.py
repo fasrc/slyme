@@ -87,6 +87,7 @@ except ImportError:
 def get_job_script(JobID):
 	"""Return the job payload script, or raise NotImplemented if unavailable.
 
+	JobID should be an int (even though str works, too).
 	Return None if there is no job script.
 	"""
 	if FASRC:
@@ -95,7 +96,7 @@ def get_job_script(JobID):
 			defaults_file = os.path.abspath(os.path.join(__file__, '..', 'local', 'my.cnf.get_job_script.prod'))
 		else:
 			defaults_file = os.path.abspath(os.path.join(__file__, '..', 'local', 'my.cnf.get_job_script.dev'))
-		shv = ['mysql', '--defaults-file=%s' % defaults_file, '-BNr', '-e', 'select script from jobscripts where id_job = %d;' % int(JobID)]
+		shv = ['mysql', '--defaults-file=%s' % defaults_file, '-BNr', '-e', 'select script from jobscripts where id_job = %d;' % int(JobID)]  #(force conversion to int, even though it should be already, to reduce injection possibilities)
 		stdout = util.runsh(shv)
 		if stdout=='': return None
 		return stdout

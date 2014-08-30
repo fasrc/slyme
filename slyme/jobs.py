@@ -21,7 +21,7 @@ from slyme import config, util
 #translation from scontrol key/value to sacct key/value)
 scontrol_key_value_translations = {
 	'JobId':
-		lambda k, v: ('JobID', v.split('(')[0]),
+		lambda k, v: ('JobID', int(v.split('(')[0])),
 	'UserId':
 		lambda k, v: ('User', v.split('(')[0]),
 	'JobState':
@@ -52,7 +52,7 @@ def _yield_raw_scontrol_text_per_job(jobs=None):
 		shv = ['scontrol', '--oneliner', 'show', 'job' ]
 
 		if jobs is not None:
-			shv.extend(jobs)
+			shv.extend([ str(j) for j in jobs])
 
 		return util.runsh_i(shv)
 
@@ -148,7 +148,7 @@ def _yield_raw_sacct_lines(state=None, users=None, jobs=None, starttime=None, en
 			shv.extend(['--state', state])
 
 		if jobs is not None:
-			shv.extend(['--jobs', ','.join(jobs)])
+			shv.extend(['--jobs', ','.join([str(j) for j in jobs])])
 
 		if users is not None:
 			shv.extend(['--user', ','.join(users)])
@@ -235,7 +235,7 @@ class x_sacct_raw_sacct_text_to_jobatts(lazydict.Extension):
 
 					#these things should be present in this main line and better than any data in the job steps
 
-					d['JobID'] = dstep['JobID']
+					d['JobID'] = int(dstep['JobID'])
 					d['User'] = dstep['User']
 					d['JobName'] = dstep['JobName']
 					d['State'] = dstep['State']
@@ -280,7 +280,7 @@ class x_sacct_SacctReport(lazydict.Extension):
 	source= ('JobID',)
 	target = ('SacctReport',)
 	def __call__(self, JobID):
-		shv = ['sacct', '--format', ','.join(x[0]+x[1] for x in keys_sacct), '-j', JobID]
+		shv = ['sacct', '--format', ','.join(x[0]+x[1] for x in keys_sacct), '-j', str(JobID)]
 		return util.runsh(shv).rstrip(),
 
 
@@ -350,7 +350,7 @@ class Job(lazydict.LazyDict):
 		#--- info from main job account line
 
 		'JobID',
-		#str, but currently always representing an integer (no ".STEP_ID")
+		#int, he base job id (no ".STEP_ID")
 
 		'User',
 		#str
@@ -462,8 +462,8 @@ def submit(job):
 
 	stdout = util.runsh(['sbatch'], job['JobScript'])
 	try:
-		job['JobID'] = re_sbatch_output.match(stdout).group(1)
-	except (AttributeError, IndexError):
+		job['JobID'] = int(re_sbatch_output.match(stdout).group(1))
+	except (AttributeError, IndexError, ValueError):
 		raise Exception("*** ERROR *** unexpected output from sbatch: %s" % repr(stdout))
 	return job
 
@@ -520,7 +520,7 @@ def jobs(out=None, err=None):
 #			JobID, User, NCPUS, NNodes = line.split()
 #
 #			j = Job()
-#			j['JobID'] = JobID
+#			j['JobID'] = int(JobID)
 #			j['User'] = User
 #			j['NCPUS'] = NCPUS
 #			j['NNodes'] = NNodes
