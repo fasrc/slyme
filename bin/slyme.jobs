@@ -4,7 +4,6 @@
 # Harvard FAS Research Computing
 # All rights reserved.
 
-from dio import cli
 from slyme.jobs import jobs
 
-cli(jobs)
+jobs()
