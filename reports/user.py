@@ -9,9 +9,13 @@
 import sys, os
 
 import slyme
-from slyme import util, jobs
+from slyme.jobs import history
 
-MOCK = True
+from dio import buffer_out
+from dio.coreutils import head
+
+
+SHOW = 150
 
 
 if __name__=='__main__':
@@ -20,28 +24,19 @@ if __name__=='__main__':
 	except IndexError:
 		sys.stderr.write("*** ERROR *** usage: %s USERNAME\n" % os.path.basename(__file__))
 		sys.exit(1)
-	
-	if MOCK:
-		from mock import MagicMock
-		
-		slyme.jobs._yield_raw_scontrol_text_per_job = MagicMock(
-			return_value=open(os.path.join(os.path.dirname(slyme.__file__), 'tests', '_mock_data', 'scontrol_bulk_parsable.out'))
-		)
-
-		slyme.jobs._yield_raw_sacct_lines = MagicMock(
-			return_value=open(os.path.join(os.path.dirname(slyme.__file__), 'tests', '_mock_data', 'sacct_bulk_parsable.out'))
-		)
 
 
 	#--- job history
 
-	for j in jobs.get_jobs_historical():
-		if j['User']==User:
-			print j
+	jobs = []
 
+	history(
+		out=head(n=SHOW,
+			out=buffer_out(
+				out=jobs
+			)
+		)
+	)
 
-	#--- live jobs
-
-	for j in jobs.get_jobs_live():
-		if j['User']==User:
-			print j
+	for job in jobs:
+		print job['JobID'], job['User'], job.get('JobScriptPreview', 'n/a')

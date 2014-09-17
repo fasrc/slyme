@@ -12,6 +12,115 @@ import slyme
 from slyme import config, util
 
 
+#=== slurm queries
+
+def _yield_raw_scontrol_text_per_job(jobs=None):
+	"""Yields strings of scontrol text for each job.
+
+	These are just single-line, not text blocks as the name implies, but it's
+	named that way for consistency (the names should be changed, consistently).
+	"""
+
+	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
+	if mockdir is not None:
+		return open(os.path.join(mockdir, 'scontrol_bulk_parsable.out'))
+	else:
+		shv = ['scontrol', '--oneliner', 'show', 'job' ]
+
+		if jobs is not None:
+			shv.extend([ str(j) for j in jobs])
+
+		return util.runsh_i(shv)
+
+def _yield_raw_sacct_lines(filter_d={}):
+	"""Yields lines from an sacct query.
+
+	Note that jobs span several lines, and this yields lines one-by-one.  See
+	_yield_raw_sacct_text_per_job for something more useful.
+	"""
+
+	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
+	if mockdir is not None:
+		return open(os.path.join(mockdir, 'sacct_bulk_parsable.out'))
+	else:
+		shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]
+
+		optmap = {
+			#single value or comma-separated list
+			'JobID':
+				lambda v: [
+					'--jobs',
+					','.join([str(x) for x in util.listify(v)]),
+				],
+			'User':
+				lambda v: [
+					'--user',
+					','.join([str(x) for x in util.listify(v)]),
+				],
+			'Partition':
+				lambda v: [
+					'--partition',
+					','.join([str(x) for x in util.listify(v)]),
+				],
+			'State':
+				lambda v: [
+					'--state',
+					','.join([str(x) for x in util.listify(v)]),
+				],
+
+			#single value only
+			'Start':
+				lambda v: [
+					'--starttime',
+					str(v),
+				],
+			'End':
+				lambda v: [
+					'--endtime',
+					str(v),
+				],
+		}
+
+		all_users = True
+
+		for k, v in filter_d.iteritems():
+			if k == 'User':
+				all_users = False
+			try:
+				shv.extend(optmap[k](v))
+			except KeyError:
+				raise Exception("[%s] is not supported as a direct query filter; post-process instead")
+
+		if all_users:
+			shv.append('--allusers')
+
+		return util.runsh_i(shv)
+
+def sacct_report(JobID):
+	"""Return multi-line, human readable job report."""
+	shv = ['sacct', '--format', ','.join(x[0]+x[1] for x in keys_sacct), '-j', str(JobID)]
+	return util.runsh(shv).rstrip()
+
+
+#=== misc helpers
+
+def _yield_raw_sacct_text_per_job(filter_d={}):
+	"""Yield multi-line strings of sacct text for each job."""
+
+	#this will be the text that's yielded
+	text = ''
+
+	for line in _yield_raw_sacct_lines(filter_d):
+		if line.startswith('|'):
+			text += line
+		else:
+			if text!='': yield text
+			text = line
+
+	if text!='':
+		yield text
+
+
 #=== extensions
 
 #--- scontrol queries
@@ -37,24 +146,6 @@ scontrol_key_value_translations = {
 	'MinMemoryCPU':
 		lambda k, v: ('ReqMem_bytes_per_core', slyme.slurmmemory_to_kB(v)),
 }
-
-def _yield_raw_scontrol_text_per_job(jobs=None):
-	"""Yields strings of scontrol text for each job.
-
-	These are just single-line, not text blocks as the name implies, but it's
-	named that way for consistency (the names should be changed, consistently).
-	"""
-
-	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
-	if mockdir is not None:
-		return open(os.path.join(mockdir, 'scontrol_bulk_parsable.out'))
-	else:
-		shv = ['scontrol', '--oneliner', 'show', 'job' ]
-
-		if jobs is not None:
-			shv.extend([ str(j) for j in jobs])
-
-		return util.runsh_i(shv)
 
 class x_scontrol_JobID_to_raw_scontrol_text(lazydict.Extension):
 	source = ('JobID',)
@@ -110,7 +201,7 @@ class x_scontrol_raw_scontrol_text_to_jobatts(lazydict.Extension):
 
 #--- sacct queries
 
-#the keys and (if applicable) formatting used when calling sacct
+#the output field names and (if applicable) formatting used when calling sacct
 keys_sacct = (
 	('User', '%-12'),
 	('JobID', '%-15'),
@@ -131,63 +222,12 @@ keys_sacct = (
 	('NodeList', '%-500'),
 )
 
-def _yield_raw_sacct_lines(state=None, users=None, jobs=None, starttime=None, endtime=None):
-	"""Yields lines from an sacct query.
-
-	Note that jobs span several lines, and this yields lines one-by-one.  See
-	_yield_raw_sacct_text_per_job for something more useful.
-	"""
-
-	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
-	if mockdir is not None:
-		return open(os.path.join(mockdir, 'sacct_bulk_parsable.out'))
-	else:
-		shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]
-
-		if state is not None:
-			shv.extend(['--state', state])
-
-		if jobs is not None:
-			shv.extend(['--jobs', ','.join([str(j) for j in jobs])])
-
-		if users is not None:
-			shv.extend(['--user', ','.join(users)])
-		else:
-			shv.extend(['--allusers'])
-
-		if starttime is not None:
-			shv.extend(['--starttime', starttime.strftime('%m/%d-%H:%M')])
-
-		if endtime is not None:
-			shv.extend(['--endtime', endtime.strftime('%m/%d-%H:%M')])
-
-		return util.runsh_i(shv)
-
-def _yield_raw_sacct_text_per_job(state=None, users=None, jobs=None, starttime=None, endtime=None):
-	"""Yields multi-line strings of sacct text for each job.
-
-	starttime and endtime should be datetime objects.
-	"""
-
-	#this will be the text that's yielded
-	text = ''
-
-	for line in _yield_raw_sacct_lines(state=state, users=users, jobs=jobs, starttime=starttime, endtime=endtime):
-		if line.startswith('|'):
-			text += line
-		else:
-			if text!='': yield text
-			text = line
-
-	if text!='':
-		yield text
-
 class x_sacct_JobID_to_raw_sacct_text(lazydict.Extension):
 	source = ('JobID',)
 	target = ('_raw_sacct_text',)
 	def __call__(self, JobID):
 		try:
-			_raw_sacct_text = _yield_raw_sacct_text_per_job(jobs=[JobID]).next()
+			_raw_sacct_text = _yield_raw_sacct_text_per_job({'JobID':JobID}).next()
 		except StopIteration:
 			return (None,)
 		return (_raw_sacct_text,)
@@ -280,8 +320,7 @@ class x_sacct_SacctReport(lazydict.Extension):
 	source= ('JobID',)
 	target = ('SacctReport',)
 	def __call__(self, JobID):
-		shv = ['sacct', '--format', ','.join(x[0]+x[1] for x in keys_sacct), '-j', str(JobID)]
-		return util.runsh(shv).rstrip(),
+		return sacct_report(JobID),
 
 
 #--- job script db (a custom fasrc Slurm feature)
@@ -350,7 +389,7 @@ class Job(lazydict.LazyDict):
 		#--- info from main job account line
 
 		'JobID',
-		#int, he base job id (no ".STEP_ID")
+		#int, the base job id (no ".STEP_ID")
 
 		'User',
 		#str
@@ -490,25 +529,21 @@ def update(job):
 
 #--- job querying
 
-def get_jobs_historical(state=None, starttime=None, endtime=None, filter=lambda j: True):
-	"""Yield Job objects that match the given parameters."""
-	for _raw_sacct_text in _yield_raw_sacct_text_per_job(state=state, starttime=starttime, endtime=endtime):
-		j = Job(_raw_sacct_text=_raw_sacct_text)
-		if filter(j):
-			yield j
-
-def get_jobs_live(state=None, starttime=None, endtime=None, filter=lambda j: True):
-	"""Yield Job objects that match the given parameters."""
+@processor
+def live(out=None, err=None):
+	"""Produce live jobs (from scontrol).
+	
+	There is no filter_d option (like there is with history()), because 
+	scontrol has no filtering options.
+	"""
 	for _raw_scontrol_text in _yield_raw_scontrol_text_per_job():
-		j = Job(_raw_scontrol_text=_raw_scontrol_text)
-		if filter(j):
-			yield j
+		out.send(Job(_raw_scontrol_text=_raw_scontrol_text))
 
 @processor
-def jobs(out=None, err=None):
-	"""Produce jobs, currently just historical jobs."""
-	for j in get_jobs_historical():
-		out.send(j)
+def history(filter_d={}, out=None, err=None):
+	"""Produce historical jobs (from sacct)."""
+	for _raw_sacct_text in _yield_raw_sacct_text_per_job(filter_d):
+		out.send(Job(_raw_sacct_text=_raw_sacct_text))
 
 #def get_jobs_running_on_host(hostname):
 #	"""Return jobs running on the given host."""

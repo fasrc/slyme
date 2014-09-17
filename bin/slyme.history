@@ -4,6 +4,6 @@
 # Harvard FAS Research Computing
 # All rights reserved.
 
-from slyme.jobs import jobs
+from slyme.jobs import history
 
-jobs()
+history()

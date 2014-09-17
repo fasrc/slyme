@@ -9,10 +9,17 @@ import unittest, mock
 from contextlib import nested  #deprecated in 2.7, but we're requiring only 2.6 so can't use the syntax the replaces it
 
 import dio
+from dio import buffer_out
+from dio.coreutils import head
+
 import slyme
 from slyme import jobs
 
 import settings
+
+
+#only process this number of the results
+LIMIT = 10
 
 
 class JobsTestCase(unittest.TestCase):
@@ -20,21 +27,38 @@ class JobsTestCase(unittest.TestCase):
 		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'scontrol_bulk_parsable.out'))
 
-			i = 0
-			for j in jobs.get_jobs_live():
+
+			results = []
+
+			jobs.live(
+				out=head(n=LIMIT,
+					out=buffer_out(
+						out=results,
+					)
+				)
+			)
+			
+			for j in results:
 				j['JobID']
-				i += 1
-				if i == 3: break  #takes too long to go through them all
 
 	def test_sacct_bulk(self):
 		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 
 			i = 0
-			for j in jobs.get_jobs_historical():
+
+			results = []
+
+			jobs.history(
+				out=head(n=LIMIT,
+					out=buffer_out(
+						out=results,
+					)
+				)
+			)
+			
+			for j in results:
 				j['JobID']
-				i += 1
-				if i == 10: break  #takes too long to go through them all
 
 	def test_scontrol_vs_sacct_single(self):
 		j_scontrol = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
@@ -81,7 +105,7 @@ class JobsTestCase(unittest.TestCase):
 			dio.default_out = dio.buffer_out(out=self.out)
 			dio.default_err = dio.buffer_out(out=self.err)
 
-			jobs.jobs()
+			jobs.history()
 
 			i = 0
 			for j in self.out:
