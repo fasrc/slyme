@@ -45,6 +45,7 @@ def _yield_raw_sacct_lines(filter_d={}):
 	else:
 		shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]
 
+		#job query filter dictionary -> to sacct command options
 		optmap = {
 			#single value or comma-separated list
 			'JobID':
@@ -242,6 +243,9 @@ class x_sacct_raw_sacct_text_to_jobatts(lazydict.Extension):
 		'Partition',
 		'NCPUS',
 		'NNodes',
+		'Submit',
+		'Start',
+		'End',
 		'CPUTime',
 		'TotalCPU',
 		'UserCPU',
@@ -282,10 +286,13 @@ class x_sacct_raw_sacct_text_to_jobatts(lazydict.Extension):
 					d['Partition'] = dstep['Partition']
 					d['NCPUS'] = int(dstep['NCPUS'])
 					d['NNodes'] = int(dstep['NNodes'])
-					d['CPUTime'] = slyme.slurmtime_to_seconds(dstep['CPUTime'])
-					d['TotalCPU'] = slyme.slurmtime_to_seconds(dstep['TotalCPU'])
-					d['UserCPU'] = slyme.slurmtime_to_seconds(dstep['UserCPU'])
-					d['SystemCPU'] = slyme.slurmtime_to_seconds(dstep['SystemCPU'])
+					for k in ('Submit','Start','End'):
+						if dstep[k] != 'Unknown':
+							d[k] = dstep[k]  #(already in YYYY-MM-DDTHH:MM:SS format)
+					d['CPUTime'] = slyme.slurm_time_interval_to_seconds(dstep['CPUTime'])
+					d['TotalCPU'] = slyme.slurm_time_interval_to_seconds(dstep['TotalCPU'])
+					d['UserCPU'] = slyme.slurm_time_interval_to_seconds(dstep['UserCPU'])
+					d['SystemCPU'] = slyme.slurm_time_interval_to_seconds(dstep['SystemCPU'])
 					d['NodeList_str'] = dstep['NodeList']
 
 					continue
@@ -412,6 +419,11 @@ class Job(lazydict.LazyDict):
 		'NodeList_str'
 		#str, the compact represntation, e.g. host[18301-18302,18308,20208]
 
+		'Submit',
+		'Start',
+		'End',
+		#timestamps in YYYY-MM-DDTHH:MM:SS, str
+
 		'CPUTime',
 		#seconds, float
 
@@ -532,8 +544,8 @@ def update(job):
 @processor
 def live(out=None, err=None):
 	"""Produce live jobs (from scontrol).
-	
-	There is no filter_d option (like there is with history()), because 
+
+	There is no filter_d option (like there is with history()), because
 	scontrol has no filtering options.
 	"""
 	for _raw_scontrol_text in _yield_raw_scontrol_text_per_job():

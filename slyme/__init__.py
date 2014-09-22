@@ -20,9 +20,9 @@ logging.getLogger('slyme').addHandler(NullHandler())
 
 #--- misc
 
-def slurmtime_to_seconds(tstr):
-	"""Convert a slurm time to seconds, a float.
-	
+def slurm_time_interval_to_seconds(tstr):
+	"""Convert a slurm time interval to seconds, a float.
+
 	Slurm times are MM:SS.SSS, HH:MM:SS, D-HH:MM:SS, etc.
 	"""
 	t = 0.0
@@ -36,7 +36,7 @@ def slurmtime_to_seconds(tstr):
 		rest = l[1]
 	else:
 		raise ValueError("unable to parse time [%s]" % tstr)
-	
+
 	l = rest.split(':')
 	if len(l)==2:
 		t += 60 * int(l[0])
@@ -47,14 +47,22 @@ def slurmtime_to_seconds(tstr):
 		t +=  int(l[2])
 	else:
 		raise ValueError("unable to parse time [%s]" % tstr)
-	
+
 	return t
+
+def datetime_to_slurm_timestamp(td):
+	"""Convert a datetime to a string format slurm understands.
+
+	This uses the YYYY-MM-DDTHH:MM:SS format, one of many understood
+	by slurm.
+	"""
+	return td.strftime('%Y-%m-%dT%H:%M:%S')
 
 def slurmmemory_to_kB(mem):
 	"""Convert the memory string to bytes, an int.
-	
-	mem is a string such as MaxRSS from `sacct'.  This just assumes slurm is 
-	using powers of 10**3, at least until kB, like it is for other memory 
+
+	mem is a string such as MaxRSS from `sacct'.  This just assumes slurm is
+	using powers of 10**3, at least until kB, like it is for other memory
 	stats.
 	"""
 	mem_kB = None
@@ -71,8 +79,8 @@ def slurmmemory_to_kB(mem):
 def AllocMem_to_kB(AllocMem):
 	"""Convert the AllocMem string to bytes, an int.
 
-	AllocMem is a string from `scontrol show node'. Since, comparing to 
-	/proc/meminfo, RealMemory MB is 10**3 kB (and NOT 2**10 kB), this assumes 
+	AllocMem is a string from `scontrol show node'. Since, comparing to
+	/proc/meminfo, RealMemory MB is 10**3 kB (and NOT 2**10 kB), this assumes
 	slurm is treating AllocMem the same.
 	"""
 	try:
@@ -82,7 +90,7 @@ def AllocMem_to_kB(AllocMem):
 
 def job_script_preview(JobScript):
 	"""Return a representative line from the JobScript.
-	
+
 	This may return the empty string.
 	"""
 	txt = JobScript
@@ -94,15 +102,3 @@ def job_script_preview(JobScript):
 		if config.job_script_line_is_interesting(line):
 			return line
 	return line
-
-
-if __name__=='__main__':
-	#check slurmtime_to_seconds()
-	for tstr, t in (
-		('4-18:29:01', 412141),
-		('05:03:43', 18223),
-		('01:09.666', 70),
-		('00:09.666', 10),
-		):
-		t2 = int(round(slurmtime_to_seconds(tstr)))
-		assert t2 == t, "%s != %s, instead got %s" % (tstr, t, t2)
