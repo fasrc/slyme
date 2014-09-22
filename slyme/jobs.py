@@ -651,7 +651,10 @@ def job_html_report(job, syntax_highlight_css=config.syntax_highlight_css, synta
 	html += '<style>\n%s\n</style>' % syntax_highlight_css
 	html += '</head>'
 	html += '<body><h1>%s</h1><hr />' % job['JobID']
-	html += config.syntax_highlight(job['JobScript'])
+	try:
+		html += config.syntax_highlight(job['JobScript'])
+	except NotImplementedError:
+		html += '<em>n/a</em>'
 	html += '<br /><hr /><br />'
 	html += '\n<pre>%s</pre>\n' % job['SacctReport']
 	html += '<br />'
