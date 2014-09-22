@@ -89,14 +89,6 @@ class ShTestCase(unittest.TestCase):
 		else:
 			raise AssertionError("bash sh code did not raise proper exception")
 
-class MiscTestCase(unittest.TestCase):
-	def test_listify_nonlist(self):
-		l = 1
-		self.assertEqual([1], util.listify(l))
-	def test_listify_list(self):
-		l = [1,2,3]
-		self.assertEqual(l, util.listify(l))
-
 
 if __name__=='__main__':
 	unittest.main()

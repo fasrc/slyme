@@ -146,9 +146,9 @@ def runsh_i(sh):
 		shell=True
 	else:
 		shell=False
-	
+
 	logging.getLogger('slyme.subprocess').debug(repr(sh))
-	
+
 	p = subprocess.Popen(
 		sh,
 		shell=shell,
@@ -183,14 +183,6 @@ def runsh_i(sh):
 	if stdout!='':
 		yield stdout
 	sherrcheck(sh, stderr, p.wait())
-
-
-#--- misc
-
-def listify(x):
-	if isinstance(x, list):
-		return x
-	return [x,]
 
 
 if __name__=='__main__':

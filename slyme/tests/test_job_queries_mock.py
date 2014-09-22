@@ -22,11 +22,10 @@ import settings
 LIMIT = 10
 
 
-class JobsTestCase(unittest.TestCase):
+class BasicsTestCase(unittest.TestCase):
 	def test_scontrol_bulk(self):
 		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'scontrol_bulk_parsable.out'))
-
 
 			results = []
 
@@ -37,15 +36,16 @@ class JobsTestCase(unittest.TestCase):
 					)
 				)
 			)
-			
+
+			self.assertEqual(len(results), LIMIT)
+
+			#use them (just make sure this raises no exceptions)
 			for j in results:
 				j['JobID']
 
 	def test_sacct_bulk(self):
 		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
-
-			i = 0
 
 			results = []
 
@@ -56,11 +56,38 @@ class JobsTestCase(unittest.TestCase):
 					)
 				)
 			)
-			
+
+			self.assertEqual(len(results), LIMIT)
+
+			#use them (just make sure this raises no exceptions)
 			for j in results:
 				j['JobID']
 
-	def test_scontrol_vs_sacct_single(self):
+class FilterTestCase(unittest.TestCase):
+	def test_sacct_bulk_filter(self):
+		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
+			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
+
+			results = []
+
+			jobs.history({
+					'State': 'COMPLETED',
+				},
+				out=head(n=LIMIT,
+					out=buffer_out(
+						out=results,
+					)
+				)
+			)
+
+			self.assertEqual(len(results), LIMIT)
+
+			#use them (just make sure this raises no exceptions)
+			for j in results:
+				j['JobID']
+
+class ScontrolVsSacctTestCase(unittest.TestCase):
+	def test_job_in_scontrol(self):
 		j_scontrol = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
 		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
 			#have scontrol return mock data for one job
@@ -72,6 +99,11 @@ class JobsTestCase(unittest.TestCase):
 			j_scontrol['State']
 			#(don't try anything that's not guaranteed to be here from scontrol, since not trying to test sacct yet)
 
+	def test_job_not_in_scontrol_in_sacct(self):
+		"""Test that fallback to sacct, when scontrol does not give the answer, works.
+
+		If coded poorly, it could loop infinitely re-trying scontrol.
+		"""
 		j_sacct = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
 		with nested(
 			mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job'),
@@ -96,6 +128,7 @@ class JobsTestCase(unittest.TestCase):
 						v = 'N/A'
 					#print '%s: %s' % (k, v)
 
+class ProcessorTestCase(unittest.TestCase):
 	def test_jobs_processor(self):
 		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))

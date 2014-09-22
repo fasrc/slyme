@@ -14,6 +14,88 @@ from slyme import config, util
 
 #=== slurm queries
 
+#the output field names and (if applicable) formatting used when calling sacct
+keys_sacct = (
+	('User', '%-12'),
+	('JobID', '%-15'),
+	('JobName', '%20'),
+	('State', ''),
+	('Partition', '%18'),
+	('NCPUS', ''),
+	('NNodes', ''),
+	('CPUTime', '%13'),
+	('TotalCPU', '%13'),
+	('UserCPU', '%13'),
+	('SystemCPU', '%13'),
+	('ReqMem', ''),
+	('MaxRSS', ''),
+	('Submit', ''),
+	('Start', ''),
+	('End', ''),
+	('NodeList', '%-500'),
+)
+
+#functions to translate job query key -> to sacct command option
+job_key_to_sacct_option = {
+	#single value or comma-separated list
+	'JobID':
+		lambda v: [
+			'--jobs',
+			','.join([str(x) for x in (v if isinstance(v, list) else [v,])]),
+		],
+	'User':
+		lambda v: [
+			'--user',
+			','.join([str(x) for x in (v if isinstance(v, list) else [v,])]),
+		],
+	'Partition':
+		lambda v: [
+			'--partition',
+			','.join([str(x) for x in (v if isinstance(v, list) else [v,])]),
+		],
+	'State':
+		lambda v: [
+			'--state',
+			','.join([str(x) for x in (v if isinstance(v, list) else [v,])]),
+		],
+
+	#single value only
+	'Start':
+		lambda v: [
+			'--starttime',
+			str(v),
+		],
+	'End':
+		lambda v: [
+			'--endtime',
+			str(v),
+		],
+}
+
+#functions to filter jobs
+job_key_to_filter_function = {
+	#single value or comma-separated list
+	'JobID':
+		lambda v, fv: v in fv if isinstance(fv, list) else v == fv,
+	'User':
+		lambda v, fv: v in fv if isinstance(fv, list) else v == fv,
+	'Partition':
+		lambda v, fv: v in fv if isinstance(fv, list) else v == fv,
+	'State':
+		lambda v, fv: v in fv if isinstance(fv, list) else v == fv,
+
+	#single value only
+	'Start':
+		lambda v, fv: v >= fv,
+	'End':
+		lambda v, fv: v <= fv,
+}
+
+#code check -- in the future, these two should be combined so that they can't
+#get out of sync
+if set(job_key_to_sacct_option.keys()) != set(job_key_to_filter_function.keys()):
+	raise Exception("internal error: sacct options and job filters are out of sync")
+
 def _yield_raw_scontrol_text_per_job(jobs=None):
 	"""Yields strings of scontrol text for each job.
 
@@ -45,50 +127,13 @@ def _yield_raw_sacct_lines(filter_d={}):
 	else:
 		shv = ['sacct',  '--noheader', '--parsable2', '--format', ','.join(x[0] for x in keys_sacct)]
 
-		#job query filter dictionary -> to sacct command options
-		optmap = {
-			#single value or comma-separated list
-			'JobID':
-				lambda v: [
-					'--jobs',
-					','.join([str(x) for x in util.listify(v)]),
-				],
-			'User':
-				lambda v: [
-					'--user',
-					','.join([str(x) for x in util.listify(v)]),
-				],
-			'Partition':
-				lambda v: [
-					'--partition',
-					','.join([str(x) for x in util.listify(v)]),
-				],
-			'State':
-				lambda v: [
-					'--state',
-					','.join([str(x) for x in util.listify(v)]),
-				],
-
-			#single value only
-			'Start':
-				lambda v: [
-					'--starttime',
-					str(v),
-				],
-			'End':
-				lambda v: [
-					'--endtime',
-					str(v),
-				],
-		}
-
 		all_users = True
 
 		for k, v in filter_d.iteritems():
 			if k == 'User':
 				all_users = False
 			try:
-				shv.extend(optmap[k](v))
+				shv.extend(job_key_to_sacct_option[k](v))
 			except KeyError:
 				raise Exception("[%s] is not supported as a direct query filter; post-process instead")
 
@@ -201,27 +246,6 @@ class x_scontrol_raw_scontrol_text_to_jobatts(lazydict.Extension):
 
 
 #--- sacct queries
-
-#the output field names and (if applicable) formatting used when calling sacct
-keys_sacct = (
-	('User', '%-12'),
-	('JobID', '%-15'),
-	('JobName', '%20'),
-	('State', ''),
-	('Partition', '%18'),
-	('NCPUS', ''),
-	('NNodes', ''),
-	('CPUTime', '%13'),
-	('TotalCPU', '%13'),
-	('UserCPU', '%13'),
-	('SystemCPU', '%13'),
-	('ReqMem', ''),
-	('MaxRSS', ''),
-	('Submit', ''),
-	('Start', ''),
-	('End', ''),
-	('NodeList', '%-500'),
-)
 
 class x_sacct_JobID_to_raw_sacct_text(lazydict.Extension):
 	source = ('JobID',)
@@ -542,6 +566,34 @@ def update(job):
 #--- job querying
 
 @processor
+def filter(filter_d, out=None, err=None):
+	"""Filter jobs, passing only those that conform with filter_d.
+
+	Jobs that don't have the given keys are not passed.  Only a certain set of
+	keys are allowed (in the future, maybe all should be allowed, with default
+	being equality test).
+	"""
+
+	#make sure we know how to filter on all the given keys
+	if not set(filter_d.keys()) <= set(job_key_to_filter_function.keys()):
+		raise NotImplementedError(
+			"filtering by key(s) [%s] is not implemented" % \
+			(set(filter_d.keys()) - set(job_key_to_filter_function.keys()))
+		)
+
+	while True:
+		d = yield
+
+		go = True
+		for k in filter_d.keys():
+			if not (d.has_key(k) and job_key_to_filter_function[k](d[k], filter_d[k])):
+				go = False
+				break
+
+		if go:
+			out.send(d)
+
+@processor
 def live(out=None, err=None):
 	"""Produce live jobs (from scontrol).
 
@@ -554,8 +606,20 @@ def live(out=None, err=None):
 @processor
 def history(filter_d={}, out=None, err=None):
 	"""Produce historical jobs (from sacct)."""
-	for _raw_sacct_text in _yield_raw_sacct_text_per_job(filter_d):
-		out.send(Job(_raw_sacct_text=_raw_sacct_text))
+	mockdir = os.environ.get('SLYME_MOCK_DATA_DIR')
+	if mockdir is None:
+		for _raw_sacct_text in _yield_raw_sacct_text_per_job(filter_d):
+			out.send(Job(_raw_sacct_text=_raw_sacct_text))
+	else:
+		#caching/mocking is not done properly yet -- the results won't match
+		#the query; they need to be filtered manually
+
+		p = filter(filter_d,
+			out=out
+		)
+
+		for _raw_sacct_text in _yield_raw_sacct_text_per_job(filter_d):
+			p.send(Job(_raw_sacct_text=_raw_sacct_text))
 
 #def get_jobs_running_on_host(hostname):
 #	"""Return jobs running on the given host."""
