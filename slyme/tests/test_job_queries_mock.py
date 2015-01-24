@@ -12,7 +12,7 @@ import dio
 from dio import buffer_out
 from dio.coreutils import head
 
-import slyme
+from slyme import Slurm
 from slyme import jobs
 
 import settings

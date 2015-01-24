@@ -7,7 +7,7 @@
 import sys, os, datetime
 import unittest
 
-import slyme
+from slyme import Slurm
 
 import settings
 
@@ -20,7 +20,7 @@ class TestCase(unittest.TestCase):
 			('01:09.666', 70),
 			('00:09.666', 10),
 			):
-			t2 = int(round(slyme.slurm_time_interval_to_seconds(tstr)))
+			t2 = int(round(Slurm.slurm_time_interval_to_seconds(tstr)))
 			self.assertEqual(t2, t,
 				"%s != %s, instead got %s" % (tstr, t, t2)
 			)
@@ -30,7 +30,7 @@ class TestCase(unittest.TestCase):
 		t = 1366299377.618821
 		td = datetime.datetime.fromtimestamp(t)
 
-		tstr2 = slyme.datetime_to_slurm_timestamp(td)
+		tstr2 = Slurm.datetime_to_slurm_timestamp(td)
 		self.assertEqual(tstr2, tstr,
 			"%s != %s, instead got %s" % (td, tstr, tstr2)
 		)

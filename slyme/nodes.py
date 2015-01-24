@@ -8,7 +8,7 @@
 import socket
 import slyme
 from dio import lazydict
-from slyme import config, util
+from slyme import config, util, Slurm
 
 
 class Node(lazydict.LazyDict):
@@ -109,7 +109,7 @@ class Node(lazydict.LazyDict):
 				elif kv.startswith('CPUAlloc'):
 					self['CPUAlloc'] = int(kv.split('=')[1])
 				elif kv.startswith('AllocMem'):
-					self['AllocMem_kB'] = slyme.AllocMem_to_kB(kv.split('=')[1])
+					self['AllocMem_kB'] = Slurm.AllocMem_to_kB(kv.split('=')[1])
 				#elif kv.startswith('AllocMem'):
 				#	memory = int(kv.split('=')[1]) * 1024
 				#	if cores is not None:
