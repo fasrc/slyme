@@ -6,7 +6,7 @@ Created on May 7, 2014
 from __future__ import print_function
 import unittest
 import os, sys
-from slyme_v1 import JobReport
+from slyme import JobReport
 
 
 

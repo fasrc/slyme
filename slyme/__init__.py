@@ -12,9 +12,9 @@ with a Slurm system.
 
 import copy
 import re
-
+import datetime
 from hex import Command
-from jobreports import JobReport
+from jobreports import JobReport,JobStep
 
 #--- setup logging
 import logging
@@ -37,6 +37,12 @@ class Slurm(object):
     squeue = Command.load("squeue",path="conf/default/squeue.json")
     sbatch = Command.load("sbatch",path="conf/default/sbatch.json")
     scancel = Command.load("scancel",path="conf/default/scancel.json")
+    
+    _sacct_format_parsable = \
+        'JobID  ,User      ,JobName    ,State    ,Partition  ,NCPUS  ,\
+         NNodes ,CPUTime   ,TotalCPU   ,UserCPU  ,SystemCPU  ,ReqMem ,MaxRSS,\
+         Start  ,End       ,NodeList   ,Elapsed'.replace(' ','')
+
     
     @classmethod
     def getJobStatus(cls,jobid):
@@ -182,10 +188,55 @@ class Slurm(object):
         
         jobid = stdout.split()[-1]
         return jobid
+        
+    @classmethod
+    def slurmtime_to_seconds(cls,tstr):
+        """Convert a slurm time to seconds, a float.
+        
+        Slurm times are MM:SS.SSS, HH:MM:SS, D-HH:MM:SS, etc.
+        """
+        t = 0.0
+        rest = tstr
+    
+        l = rest.split('-')
+        if len(l)==1:
+            rest = l[0]
+        elif len(l)==2:
+            t += int(l[0]) * 86400
+            rest = l[1]
+        else:
+            raise ValueError("unable to parse time [%s]" % tstr)
+        
+        l = rest.split(':')
+        if len(l)==2:
+            t += 60 * int(l[0])
+            t += float(l[1])
+        elif len(l)==3:
+            t +=  int(l[0]) * 3600
+            t +=  int(l[1]) * 60
+            t +=  int(l[2])
+        else:
+            raise ValueError("unable to parse time [%s]" % tstr)
+        
+        return t
     
     @classmethod
-    def getJobReports(cls,**kwargs):
-        return JobReport.fetch(**kwargs)
+    def MaxRSS_to_kB(cls,MaxRSS):
+        """Convert the MaxRSS string to bytes, an int.
+        
+        MaxRSS is the string from `sacct'.  This just assumes slurm is using powers 
+        of 10**3, at least until kB, like it is for other memory stats.
+        """
+        MaxRSS_kB = None
+        for s,e in (('K',0), ('M',1), ('G',2), ('T',3), ('P',4)):
+            if MaxRSS.endswith(s):
+                MaxRSS_kB = int(round(float(MaxRSS[:-1])*1000**e))  #(float because it's often given that way)
+                break
+        if MaxRSS_kB is None:
+            if MaxRSS=='0':
+                return 0
+            raise Exception("un-parsable MaxRSS [%r]" % MaxRSS)
+        return MaxRSS_kB
     
     @classmethod
     def slurm_time_interval_to_seconds(cls,tstr):
@@ -258,4 +309,169 @@ class Slurm(object):
             return int(AllocMem)*1000
         except (ValueError,TypeError):
             raise Exception("un-parsable AllocMem [%r]" % AllocMem)
+        
+    @classmethod
+    def _yield_raw_sacct_job_text_blocks(cls,**kwargs):
+        """
+        Yields multi-line strings of sacct text for each job.
+        """
+        logger.debug("yielding sacct text with args %s" % kwargs)
+        
+        # If an command line executor is defined in the arguments, use that
+        # otherwise, use runsh_i
+        executor = runsh_i
+        if 'execfunc' in kwargs:
+            executor = kwargs['execfunc']
+                        
+        
+        shv = ['sacct', '--noheader', '--parsable2', '--format', Slurm._sacct_format_parsable]            
+        
+        # Set of parameters that can't be passed along because they would 
+        # interfere with JobStep creation
+        badparams = ['brief','helpformat','help','long','format','parsable',\
+                     'parsable2','usage','verbose','version']
+        
+        # Command switches without an argument
+        boolean = ['allusers', 'completion', 'duplicates','allclusters','truncate']
+        
+        if kwargs is not None:
+            # Throw exception if it's in the badparams list
+            if any(key in badparams for key in kwargs):
+                raise Exception("The following sacct parameters can not be used when fetching jobs: %s" % ','.join(badparams))
+            
+            # Go through the kwargs and append to the command
+            for key, value in kwargs.iteritems():
+                
+                key = key.strip()
+                
+                # If it's a boolean, just take the key
+                if key in boolean:
+                    shv.extend(['--%s' % key])
+                else:
+                    shv.extend(['--%s' % key, value])
+                            
+                    
+        #this will be the text that's yielded
+        text = ''
     
+        #for line in open('_fake_data/sacct_alljobs_parsable.out').readlines():
+        # Execute the sacct command
+        #print("Executing with %s" % execfunc)
+        for line in executor(shv):
+            logger.debug("Command output line %s" % line)
+            if line.startswith('|'):
+                text += line
+            else:
+                if text!='': yield text
+                text = line
+        
+        if text!='':
+            yield text
+            
+    @classmethod
+    def getJobReports(cls,**kwargs):
+        """
+        Yield JobReport objects that match the given parameters.  
+        
+        Each row in the output is used to create a JobStep.  Once the job steps
+        are collected, a JobReport is created and yielded.  Assumes that 
+        jobsteps come out in sequence (though it doesn't matter which one is
+        first.
+        """
+        
+        # Regular expression for testing for state "CANCELLED by <uid>"
+        cancelledbyre = re.compile(r'CANCELLED by (\d+)')
+        
+        jobsteps = []
+        currentjobid = None
+        for saccttext in Slurm._yield_raw_sacct_job_text_blocks(**kwargs):
+            try:
+                for line in saccttext.split('\n'):
+                    line = line.strip()
+                    if line=='':
+                        continue
+    
+                    JobID,User,JobName,State,Partition,NCPUS,NNodes,CPUTime,\
+                        TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,\
+                        NodeList,Elapsed = line.split('|')
+                    logger.debug("User %s, JobID %s" % (User,JobID))
+                    
+                    # Convert JobID to just the base id, and set an extra 
+                    # JobStepName variable with the step key
+                    JobStepName = ''
+                    if '.' in JobID:
+                        JobID, JobStepName = JobID.split('.')
+                    
+                    if currentjobid is None:
+                        currentjobid = JobID
+                        
+                    # If this is a new JobID, yield the last one
+                    if JobID != currentjobid:
+                        logger.debug("---New JobID %s" % JobID)
+                        currentjobid = JobID
+                        yield JobReport(jobsteps)
+                        jobsteps = []
+        
+                    j = JobStep()
+                    j.JobID         = JobID
+                    j.JobStepName   = JobStepName
+                    j.User          = User
+                    j.JobName       = JobName
+                    
+                    m1 = cancelledbyre.match(State)
+                    CancelledBy = None
+                    if m1 is not None:
+                        CancelledBy = m1.group(1)
+                        State = 'CANCELLED'
+                    
+                    j.State         = State
+                    j.CancelledBy   = CancelledBy
+                    j.Partition     = Partition
+                    j.NCPUS         = int(NCPUS)
+                    j.NNodes        = int(NNodes)
+                    j.CPUTime       = Slurm.slurmtime_to_seconds(CPUTime)
+                    j.TotalCPU      = Slurm.slurmtime_to_seconds(TotalCPU)
+                    j.UserCPU       = Slurm.slurmtime_to_seconds(UserCPU)
+                    j.SystemCPU     = Slurm.slurmtime_to_seconds(SystemCPU)
+                    j.Elapsed       = Slurm.slurmtime_to_seconds(Elapsed)
+                    
+                    starttime = None
+                    if Start and Start != 'Unknown':
+                        starttime = datetime.strptime(Start,"%Y-%m-%dT%H:%M:%S")
+                    j.Start         = starttime
+                    
+                    endtime = None
+                    if End and End != 'Unknown':
+                        endtime = datetime.strptime(End,"%Y-%m-%dT%H:%M:%S")
+                    j.End           = endtime
+                    
+                    j.NodeList      = NodeList
+
+                    #these are the job steps after the main entry
+
+                    #ReqMem
+                    j.ReqMem_bytes = 0
+
+                    if ReqMem.endswith('Mn'):
+                        ReqMem_bytes_per_node = int(ReqMem[:-2])*1024**2
+                        j.ReqMem_bytes_per_node = ReqMem_bytes_per_node
+                        j.ReqMem_bytes          = ReqMem_bytes_per_node
+                        j.ReqMem_bytes_per_core = None
+                    elif ReqMem.endswith('Mc'):
+                        ReqMem_bytes_per_core = int(ReqMem[:-2])*1024**2
+                        j.ReqMem_bytes_per_node = None
+                        j.ReqMem_bytes_per_core = ReqMem_bytes_per_core
+                        j.ReqMem_bytes          = ReqMem_bytes_per_core
+                        
+                    #MaxRSS
+                    j.MaxRSS_kB = 0
+                    if MaxRSS:
+                        j.MaxRSS_kB = Slurm.MaxRSS_to_kB(MaxRSS)
+    
+                    jobsteps.append(j)
+                    
+            except Exception, e:
+                raise Exception("unable to parse sacct job text [%r]: %r\n" % (saccttext, e))
+
+        # Send off the final JobReport
+        yield JobReport(jobsteps)    
