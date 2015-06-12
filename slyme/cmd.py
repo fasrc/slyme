@@ -132,8 +132,8 @@ class SlurmRunner(ShellRunner):
     ShellRunner class that gets job ids instead of pids and uses squeue
     to determine status
     """
-    def __init__(self,path=None,verbose=0,usevenv=False):
-        super(self.__class__,self).__init__(path=path,verbose=verbose,usevenv=usevenv)
+    def __init__(self,logpath=None,verbose=0,usevenv=False):
+        super(self.__class__,self).__init__(logpath=logpath,verbose=verbose,usevenv=usevenv)
 
     def getSlurmStatus(self,jobid):
         checkcmd = "squeue -j %s --format=%%T -h" % jobid

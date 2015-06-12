@@ -87,7 +87,7 @@ class Test(unittest.TestCase):
         self.assertTrue(isinstance(sbatch.command,Command), 'sbatch.command should be a Command object')
         
         # Run squeue in a loop to get status information
-        squeue = Command.fetch('squeue',path=self.confpath)
+        squeue = Command.load('squeue',path=self.confpath)
         squeue.jobs = h.jobid
         squeue.noheader = True
         sh = ShellRunner(verbose=1)        
@@ -104,7 +104,7 @@ class Test(unittest.TestCase):
         self.assertTrue(h.exitstatus == "COMPLETED")
         
         #Get sacct information
-        sacct = Command.fetch('sacct',path=self.confpath)
+        sacct = Command.load('sacct',path=self.confpath)
         sacct.jobs = h.jobid
         sacct.format = "JobID,elapsed"
         sacct.noheader = True

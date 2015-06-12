@@ -240,12 +240,19 @@ class JobReport(object):
     
     def get_CPUTime(self):
         """
-        Sums the CPUTime of the individual job steps
+        Largest CPUTime of the individual job steps
         """
         cputime = 0
         for js in self.jobsteps:
-            cputime += js.CPUTime
+            if js.CPUTime > cputime:
+                cputime = js.CPUTime
         return cputime
+    
+    def get_CPU_Efficiency(self):
+        if self.CPUTime != 0:
+            return self.TotalCPU / self.CPUTime
+        else:
+            return 0
         
 
     

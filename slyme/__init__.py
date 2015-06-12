@@ -51,9 +51,9 @@ class Slurm(object):
         by the functions that use the slurm commands.
         """
         if Slurm.squeue is None or Slurm.sbatch is None or Slurm.scancel is None:
-            Slurm.squeue = Command.load("squeue",path=os.path.join(os.path.dirname(os.path.dirname(__file__)),"conf/14.03.8"))
-            Slurm.sbatch = Command.load("sbatch",path=os.path.join(os.path.dirname(os.path.dirname(__file__)),"conf/14.03.8"))
-            Slurm.scancel = Command.load("scancel",path=os.path.join(os.path.dirname(os.path.dirname(__file__)),"conf/14.03.8"))
+            Slurm.squeue = Command.load("squeue",path=os.path.join(os.path.dirname(__file__),"conf/14.03.8"))
+            Slurm.sbatch = Command.load("sbatch",path=os.path.join(os.path.dirname(__file__),"conf/14.03.8"))
+            Slurm.scancel = Command.load("scancel",path=os.path.join(os.path.dirname(__file__),"conf/14.03.8"))
     
     
     @classmethod
@@ -211,6 +211,8 @@ class Slurm(object):
         Slurm times are MM:SS.SSS, HH:MM:SS, D-HH:MM:SS, etc.
         """
         t = 0.0
+        if tstr.strip() == "":
+            return t
         rest = tstr
     
         l = rest.split('-')
@@ -421,13 +423,15 @@ class Slurm(object):
                     print "unable to parse sacct job text [%r]: %r\n" % (saccttext, e)
                     
                     # Probably due to pipes in the JobName, so try alternate parsing strategy
-                    result = re.match(r'([^\|]+)\|([^\|]+)\|(.*?)\|(BOOT_FAIL|CANCELLED|COMPLETED|FAILED|NODE_FAIL|PREEMPTED|TIMEOUT)\|(.*)',line)
+                    # result = re.match(r'([^\|]+)\|([^\|]+)\|(.*?)\|(BOOT_FAIL|CANCELLED|COMPLETED|FAILED|NODE_FAIL|PREEMPTED|TIMEOUT)\|(.*)',line)
+                    result = re.match(r'(.*?)\|(BOOT_FAIL|CANCELLED|COMPLETED|FAILED|NODE_FAIL|PREEMPTED|TIMEOUT)\|(.*)',line)
                     if result is not None:
-                        JobID   = result.group(1)
-                        User    = result.group(2)
-                        JobName = result.group(3)
-                        State   = result.group(4)
-                        remainder = result.group(5)
+                        fields = result.group(1).split('|')
+                        JobID   = fields[0]
+                        User    = fields[1]
+                        JobName = "".join(fields[2:])
+                        State   = result.group(2)
+                        remainder = result.group(3)
                         Partition,NCPUS,NNodes,CPUTime, \
                             TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,\
                             NodeList,Elapsed = remainder.split("|")

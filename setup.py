@@ -19,7 +19,10 @@ setup(
     keywords = "slurm",
     url='http://pypi.python.org/pypi/slyme/',
     packages = find_packages(),
-    package_data={'slyme': ['*.conf']},
+    include_package_data = True,
+    package_data = {
+        'slyme' : ['conf/14.03.8/*.json']
+    },
     long_description=open('README.txt').read(),
     classifiers=[
         "Development Status :: 3 - Alpha",
