@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2014, John A. Brunelle
+# All rights reserved.
+
+from dio import default_in
+
+from eglib import x_gt_10, y_gt_10
+
+default_in(out=x_gt_10(out=y_gt_10()))

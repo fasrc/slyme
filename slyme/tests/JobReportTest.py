@@ -6,7 +6,7 @@ Created on May 7, 2014
 from __future__ import print_function
 import unittest
 import os, sys
-from slyme import JobReport
+from slyme import JobReport, Slurm
 
 
 
@@ -44,7 +44,7 @@ class Test(unittest.TestCase):
 """
         currentrunsh = FakeRunSh(text)
         
-        jobreports = JobReport.fetch(execfunc = currentrunsh.runsh_i)
+        jobreports = Slurm.getJobReports(execfunc = currentrunsh.runsh_i)
         
         # *** Test for JobReport with single JobStep (10048462 is an interactive job) ***
         jr = jobreports.next()
@@ -54,7 +54,7 @@ class Test(unittest.TestCase):
         # NCPUS should be the max
         self.assertEqual(jr.NCPUS, 8, "Incorrect NCPUS %d" % jr.NCPUS)
         # CPUTime should be the sum
-        self.assertEqual(jr.CPUTime, 1188, "Incorrect CPUTime %d" % jr.CPUTime)
+        self.assertEqual(jr.CPUTime, 1056, "Incorrect CPUTime %d" % jr.CPUTime)
         
 
     def test_JobReportParsing(self):  
@@ -81,7 +81,7 @@ class Test(unittest.TestCase):
 """        
         currentrunsh = FakeRunSh(text)
         
-        jobreports = JobReport.fetch(execfunc = currentrunsh.runsh_i)
+        jobreports = Slurm.getJobReports(execfunc = currentrunsh.runsh_i)
         
         # *** Test for JobReport with single JobStep (10048462 is an interactive job) ***
         jr = jobreports.next()

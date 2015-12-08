@@ -8,7 +8,7 @@ import sys, os
 import unittest, mock
 
 import slyme
-from slyme import util, jobs
+from slyme import util
 
 from dio import buffer_out
 from dio.coreutils import head
@@ -94,7 +94,7 @@ class JobsTestCase(unittest.TestCase):
 
 	def test_scontrol_invalid_JobID(self):
 		#mock sacct to make sure that doesn't pick up the job either
-		with mock.patch('slyme.jobs._yield_raw_sacct_text_per_job') as m:
+		with mock.patch('slyme.Slurm._yield_raw_sacct_text_per_job') as m:
 			m.return_value = open('/dev/null','r')
 
 			j = jobs.Job(JobID='1')  #assuming JobID 1 has aged out of scontrol

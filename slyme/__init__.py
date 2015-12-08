@@ -500,18 +500,19 @@ class Slurm(object):
                     j.ReqMem_bytes_per_node = ReqMem_bytes_per_node
                     j.ReqMem_bytes          = ReqMem_bytes_per_node
                     j.ReqMem_bytes_per_core = None
-                    j.ReqMem_mb_total       = int(ReqMem[:-2])
+                    j.ReqMem_MB_total       = int(ReqMem[:-2])
                 elif ReqMem.endswith('Mc'):
                     ReqMem_bytes_per_core = int(ReqMem[:-2])*1024**2
                     j.ReqMem_bytes_per_node = None
                     j.ReqMem_bytes_per_core = ReqMem_bytes_per_core
                     j.ReqMem_bytes          = ReqMem_bytes_per_core
-                    j.ReqMem_mb_total       = int(ReqMem[:-2]) * int(NCPUS)
+                    j.ReqMem_MB_total       = int(ReqMem[:-2]) * int(NCPUS)
                     
                 #MaxRSS
                 j.MaxRSS_kB = 0
                 if MaxRSS:
                     j.MaxRSS_kB = Slurm.MaxRSS_to_kB(MaxRSS)
+                    j.MaxRSS_MB = j.MaxRSS_kB * 1024
 
                 jobsteps.append(j)
                     

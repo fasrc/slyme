@@ -13,7 +13,6 @@ from dio import buffer_out
 from dio.coreutils import head
 
 from slyme import Slurm
-from slyme import jobs
 
 import settings
 
@@ -24,7 +23,7 @@ LIMIT = 10
 
 class BasicsTestCase(unittest.TestCase):
 	def test_scontrol_bulk(self):
-		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
+		with mock.patch('slyme.Slurm._yield_raw_scontrol_text_per_job') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'scontrol_bulk_parsable.out'))
 
 			results = []
@@ -44,7 +43,7 @@ class BasicsTestCase(unittest.TestCase):
 				j['JobID']
 
 	def test_sacct_bulk(self):
-		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
+		with mock.patch('slyme.Slurm._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 
 			results = []
@@ -65,7 +64,7 @@ class BasicsTestCase(unittest.TestCase):
 
 class FilterTestCase(unittest.TestCase):
 	def test_sacct_bulk_filter(self):
-		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
+		with mock.patch('slyme.Slurm._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 
 			results = []
@@ -89,7 +88,7 @@ class FilterTestCase(unittest.TestCase):
 class ScontrolVsSacctTestCase(unittest.TestCase):
 	def test_job_in_scontrol(self):
 		j_scontrol = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
-		with mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job') as m:
+		with mock.patch('slyme.Slurm._yield_raw_scontrol_text_per_job') as m:
 			#have scontrol return mock data for one job
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'scontrol_single_parallel_RUNNING.out'))
 
@@ -106,8 +105,8 @@ class ScontrolVsSacctTestCase(unittest.TestCase):
 		"""
 		j_sacct = jobs.Job(JobID='77454')  #(JobID doesn't matter, since data is mocked)
 		with nested(
-			mock.patch('slyme.jobs._yield_raw_scontrol_text_per_job'),
-		    mock.patch('slyme.jobs._yield_raw_sacct_text_per_job')
+			mock.patch('slyme.Slurm._yield_raw_scontrol_text_per_job'),
+		    mock.patch('slyme.Slurm._yield_raw_sacct_text_per_job')
 			) as (m1, m2):
 
 			#have scontrol return no data, so queries fall back on sacct
@@ -130,7 +129,7 @@ class ScontrolVsSacctTestCase(unittest.TestCase):
 
 class ProcessorTestCase(unittest.TestCase):
 	def test_jobs_processor(self):
-		with mock.patch('slyme.jobs._yield_raw_sacct_lines') as m:
+		with mock.patch('slyme.Slurm._yield_raw_sacct_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 
 			self.out = []

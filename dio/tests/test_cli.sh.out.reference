@@ -1,0 +1,30 @@
+test dio.identity
+{"name": "foo"}
+{"name": "foo"}
+{"name": "bar"}
+test EPIPE recovery
+2
+test dio.tidy
+{"bar": 2}
+{"bar": 2}
+{"sum": 8, "__class__": "eglib.ExampleLazyDict"}
+test eg.cli_of_python_pipeline
+{"x": 15}
+{"x": 20}
+test dio.sort
+{"foo": 1}
+{"foo": 3}
+{"foo": 5}
+test dio.uniq
+{"name": "foo"}
+{"name": "bar"}
+test dio.wc
+{"count": 3}
+test dio.count
+{"zzz": 1}
+{"bar": 2}
+{"foo": 3}
+test dio.sum
+{"zzz": 3}
+{"bar": 7}
+{"foo": 11}

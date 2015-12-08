@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
                 os.remove(f)
             except Exception:
                 pass
-        self.confpath = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),'conf','14.03.8')
+        self.confpath = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),'conf','14.03.8')
 
     def tearDown(self):
         pass

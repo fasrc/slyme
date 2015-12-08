@@ -11,14 +11,14 @@ import sys, os
 import unittest, mock
 
 import slyme
-from slyme import util, jobs
+from slyme import util
 
 import settings
 
 
 class SankeyTestCase(unittest.TestCase):
 	def test_sacct_bulk(self):
-		with mock.patch('slyme.jobs._yield_raw_sacct_job_lines') as m:
+		with mock.patch('slyme.Slurm._yield_raw_sacct_job_lines') as m:
 			m.return_value = open(os.path.join(os.path.dirname(__file__), '_mock_data', 'sacct_bulk_parsable.out'))
 
 			users = {}
