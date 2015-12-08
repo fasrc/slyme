@@ -130,6 +130,7 @@ class JobReport(object):
         'ReqMem_bytes',
         #bytes, int, or None if not used
         
+        
         'Start',
         #Start time 
         
@@ -147,7 +148,10 @@ class JobReport(object):
         'ReqMem_bytes_total',
         #bytes, int, or None if not used
         #a computation combining the appropriate request per resource and number of resources
-
+      
+        'ReqMem_MB_total',
+        #Total requested memory in MB.
+        
         'CPU_Efficiency',
         #float, should be in the range [0.0,1.0), but nothing guarantees that
         
@@ -156,6 +160,9 @@ class JobReport(object):
         
         'CancelledBy',
         #If State is CANCELLED by (uid), this is the uid
+        
+        'MaxRSS_MB',
+        #Max RSS in MB, int
 
     ]
                         
