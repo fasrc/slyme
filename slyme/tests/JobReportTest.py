@@ -104,7 +104,7 @@ class Test(unittest.TestCase):
         self.assertEqual(jr.JobName, 'bash', "Incorrect JobName %s" % jr.JobName)
         self.assertEqual(jr.NCPUS, 1, "Incorrect NCPUS %s" % jr.NCPUS)
         self.assertEqual(jr.NNodes, 1, "Incorrect NNodes %s" % jr.NNodes)
-        self.assertEqual(jr.ReqMem_bytes, 2148557389, "Incorrect ReqMem_bytes %s" % jr.ReqMem_bytes)
+        self.assertEqual(jr.ReqMem_bytes, 2148557390, "Incorrect ReqMem_bytes %s" % jr.ReqMem_bytes)
         self.assertEqual(jr.MaxRSS_kB, 2409232, "Incorrect MaxRSS_kB %s" % jr.MaxRSS_kB)
         self.assertEqual(jr.Start.month, 5, "Incorrect Start.month %s" % jr.Start.month)
         self.assertEqual(jr.Start.day, 1, "Incorrect Start.day %s" % jr.Start.day)

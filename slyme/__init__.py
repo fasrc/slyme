@@ -530,6 +530,7 @@ class Slurm(object):
                     j.MaxRSS_kB = Slurm.MaxRSS_to_kB(MaxRSS)
                     j.MaxRSS_MB = j.MaxRSS_kB / 1024
 
+                
                 jobsteps.append(j)
                     
 

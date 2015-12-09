@@ -164,6 +164,9 @@ class JobReport(object):
         'MaxRSS_MB',
         #Max RSS in MB, int
 
+        'Mem_Wasted',
+        #ReqMem / MaxRSS * 100.  An integer percentage.
+
     ]
                         
 
@@ -235,6 +238,16 @@ class JobReport(object):
                 max = js.MaxRSS_kB
         return max
     
+    def get_MaxRSS_MB(self):
+        """
+        Gets the max value from the jobsteps
+        """
+        max = -1
+        for js in self.jobsteps:
+            if js.MaxRSS_MB > max:
+                max = js.MaxRSS_MB
+        return max
+    
     def get_NCPUS(self):
         """
         Gets the max value from the jobsteps
@@ -258,6 +271,15 @@ class JobReport(object):
     def get_CPU_Efficiency(self):
         if self.CPUTime != 0:
             return self.TotalCPU / self.CPUTime
+        else:
+            return 0
+        
+    def get_Mem_Wasted(self):
+        """
+        ReqMem / MaxRSS * 100.  An integer percentage.
+        """
+        if self.MaxRSS_MB is not None and self.MaxRSS_MB != 0:
+            return int(round(float(self.ReqMem_MB_total / self.MaxRSS_MB) * 100))
         else:
             return 0
         
