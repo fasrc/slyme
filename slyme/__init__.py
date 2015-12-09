@@ -511,6 +511,18 @@ class Slurm(object):
                     j.ReqMem_bytes_per_core = ReqMem_bytes_per_core
                     j.ReqMem_bytes          = ReqMem_bytes_per_core
                     j.ReqMem_MB_total       = int(ReqMem[:-2]) * int(NCPUS)
+                elif ReqMem.endswith('Gn'):
+                    ReqMem_bytes_per_core = int(ReqMem[:-2])*1024**3
+                    j.ReqMem_bytes_per_node = None
+                    j.ReqMem_bytes_per_core = ReqMem_bytes_per_core
+                    j.ReqMem_bytes          = ReqMem_bytes_per_core
+                    j.ReqMem_MB_total       = int(ReqMem[:-2]) * int(NCPUS)
+                elif ReqMem.endswith('Gc'):
+                    ReqMem_bytes_per_core = int(ReqMem[:-2])*1024**3
+                    j.ReqMem_bytes_per_node = None
+                    j.ReqMem_bytes_per_core = ReqMem_bytes_per_core
+                    j.ReqMem_bytes          = ReqMem_bytes_per_core
+                    j.ReqMem_MB_total       = int(ReqMem[:-2]) * int(NCPUS)
                     
                 #MaxRSS
                 j.MaxRSS_kB = 0

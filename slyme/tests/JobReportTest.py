@@ -72,7 +72,7 @@ class Test(unittest.TestCase):
         """
         
         text="""
-10048462|akitzmiller|bash|CANCELLED by 0|interact|1|1|02:08:33|08:01.433|06:47.955|01:13.477|2000Mn|2409232K|2014-05-01T11:43:26|2014-05-01T13:51:59|holy2a18206|00:24:32
+10048462|akitzmiller|bash|CANCELLED by 0|interact|1|1|02:08:33|08:01.433|06:47.955|01:13.477|2Gn|2409232K|2014-05-01T11:43:26|2014-05-01T13:51:59|holy2a18206|00:24:32
 10053213|akitzmiller|bash|COMPLETED|interact|1|1|01:04:49|13:29.616|11:09.280|02:20.336|20000Mn|468500K|2014-05-01T13:52:30|2014-05-01T14:57:19|holy2a18206|00:24:32
 10058675|akitzmiller|bash|CANCELLED by 100278|bigmem|0|2|00:00:00|00:00:00|00:00:00|00:00:00|300000Mn||2014-05-01T17:26:17|2014-05-01T17:26:17|None assigned|00:24:32
 10101624|akitzmiller|agalmatest.sbatch|FAILED|bigmem|8|1|00:30:08|03:37.192|02:57.685|00:39.506|300000Mn||2014-05-04T10:34:55|2014-05-04T10:38:41|holybigmem08|00:24:32
@@ -104,7 +104,7 @@ class Test(unittest.TestCase):
         self.assertEqual(jr.JobName, 'bash', "Incorrect JobName %s" % jr.JobName)
         self.assertEqual(jr.NCPUS, 1, "Incorrect NCPUS %s" % jr.NCPUS)
         self.assertEqual(jr.NNodes, 1, "Incorrect NNodes %s" % jr.NNodes)
-        self.assertEqual(jr.ReqMem_bytes, 2097152000, "Incorrect ReqMem_bytes %s" % jr.ReqMem_bytes)
+        self.assertEqual(jr.ReqMem_bytes, 2147483648, "Incorrect ReqMem_bytes %s" % jr.ReqMem_bytes)
         self.assertEqual(jr.MaxRSS_kB, 2409232, "Incorrect MaxRSS_kB %s" % jr.MaxRSS_kB)
         self.assertEqual(jr.Start.month, 5, "Incorrect Start.month %s" % jr.Start.month)
         self.assertEqual(jr.Start.day, 1, "Incorrect Start.day %s" % jr.Start.day)
