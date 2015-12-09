@@ -244,6 +244,10 @@ class Slurm(object):
         MaxRSS is the string from `sacct'.  This just assumes slurm is using powers 
         of 10**3, at least until kB, like it is for other memory stats.
         """
+        
+        # Handle this weird thing in the sacct lines that are not .batch
+        if MaxRSS=='16?':
+            return 0
         MaxRSS_kB = None
         for s,e in (('K',0), ('M',1), ('G',2), ('T',3), ('P',4)):
             if MaxRSS.endswith(s):
