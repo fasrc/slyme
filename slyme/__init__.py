@@ -512,10 +512,10 @@ class Slurm(object):
                     j.ReqMem_bytes          = ReqMem_bytes_per_core
                     j.ReqMem_MB_total       = int(ReqMem[:-2]) * int(NCPUS)
                 elif ReqMem.endswith('Gn'):
-                    ReqMem_bytes_per_core = int(round(float(ReqMem[:-2])*1024**3))
-                    j.ReqMem_bytes_per_node = None
-                    j.ReqMem_bytes_per_core = ReqMem_bytes_per_core
-                    j.ReqMem_bytes          = ReqMem_bytes_per_core
+                    ReqMem_bytes_per_node = int(round(float(ReqMem[:-2])*1024**3))
+                    j.ReqMem_bytes_per_node = ReqMem_bytes_per_node
+                    j.ReqMem_bytes_per_core = None
+                    j.ReqMem_bytes          = ReqMem_bytes_per_node
                     j.ReqMem_MB_total       = int(round(float(ReqMem[:-2]) * int(NCPUS)))
                 elif ReqMem.endswith('Gc'):
                     ReqMem_bytes_per_core = int(round(float(ReqMem[:-2])*1024**3))
