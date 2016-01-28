@@ -538,6 +538,7 @@ class Slurm(object):
                     
                 #MaxRSS
                 j.MaxRSS_kB = 0
+                j.MaxRSS_MB = 0
                 if MaxRSS:
                     j.MaxRSS_kB = Slurm.MaxRSS_to_kB(MaxRSS)
                     j.MaxRSS_MB = j.MaxRSS_kB / 1024
