@@ -49,7 +49,6 @@ class Test(unittest.TestCase):
         # *** Test for JobReport with single JobStep (10048462 is an interactive job) ***
         jr = jobreports.next()
         
-        print(jr.keys)
                 
         self.assertEqual(jr.JobID, '10812627', "Incorrect JobID %s" % jr.JobID)
         
@@ -62,6 +61,10 @@ class Test(unittest.TestCase):
         # ReqMem_MB_total should be mem-per-cpu * number of cpus
         self.assertEqual(jr.ReqMem_MB_total, 1600, "Incorrect ReqMem_MB_total %d" % jr.ReqMem_MB_total)
         
+        steps = jr.jobsteps
+        
+        self.assertEqual(steps[0].MaxRSS_MB, 0, "First job step has wrong MaxRSS_MB %d" % steps[0].MaxRSS_MB)
+        self.assertEqual(steps[1].MaxRSS_MB, 62, "Second job step has wrong MaxRSS_MB %d" % steps[1].MaxRSS_MB)
         # MaxRSS_MB is MaxRSS_kB / 1024
         self.assertEqual(jr.MaxRSS_MB, 62, "Incorrect MaxRSS_MB %d" % jr.MaxRSS_MB)
         
