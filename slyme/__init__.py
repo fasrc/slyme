@@ -544,14 +544,14 @@ class Slurm(object):
                     j.MaxRSS_MB = j.MaxRSS_kB / 1024
 
                 # MaxVMSize
-                j.MaxVMSize = 0
+                j.MaxVMSize_MB = 0
                 if MaxVMSize:
-                    j.MaxVMSize = Slurm.MaxRSS_to_kB(MaxVMSize) / 1024
+                    j.MaxVMSize_MB = Slurm.MaxRSS_to_kB(MaxVMSize) / 1024
                     
                 # AveVMSize
-                j.AveVMSize = 0
+                j.AveVMSize_MB = 0
                 if AveVMSize:
-                    j.AveVMSize = Slurm.MaxRSS_to_kB(AveVMSize) / 1024
+                    j.AveVMSize_MB = Slurm.MaxRSS_to_kB(AveVMSize) / 1024
                 
                 jobsteps.append(j)
                     
