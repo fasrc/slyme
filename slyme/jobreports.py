@@ -167,6 +167,11 @@ class JobReport(object):
         'Mem_Wasted',
         #ReqMem / MaxRSS * 100.  An integer percentage.
 
+        'MaxVMSize_MB',
+        #Maximum amount of virtual memory used in BM
+
+        'AveVMSize_MB',
+        #Average amount of virtual memory used in MB.
     ]
                         
 
@@ -246,6 +251,26 @@ class JobReport(object):
         for js in self.jobsteps:
             if js.MaxRSS_MB > max:
                 max = js.MaxRSS_MB
+        return max
+    
+    def get_MaxVMSize_MB(self):
+        """
+        Gets the max value from the jobsteps
+        """
+        max = -1
+        for js in self.jobsteps:
+            if js.MaxVMSize_MB > max:
+                max = js.MaxVMSize_MB
+        return max
+    
+    def get_AveVMSize_MB(self):
+        """
+        Gets the max value from the jobsteps
+        """
+        max = -1
+        for js in self.jobsteps:
+            if js.AveVMSize_MB > max:
+                max = js.AveVMSize_MB
         return max
     
     def get_NCPUS(self):

@@ -42,7 +42,7 @@ class Slurm(object):
     _sacct_format_parsable = \
         'JobID  ,User      ,JobName    ,State    ,Partition  ,NCPUS  ,\
          NNodes ,CPUTime   ,TotalCPU   ,UserCPU  ,SystemCPU  ,ReqMem ,MaxRSS,\
-         Start  ,End       ,NodeList   ,Elapsed'.replace(' ','')
+         Start  ,End       ,NodeList   ,Elapsed  ,MaxVMSize  ,AveVMSize'.replace(' ','')
 
     @classmethod
     def initcmds(cls):
@@ -416,12 +416,12 @@ class Slurm(object):
                 # command string
                 JobID = User = JobName = State = Partition = NCPUS = NNodes = CPUTime = \
                         TotalCPU = UserCPU = SystemCPU = ReqMem = MaxRSS = Start = End = \
-                        NodeList = Elapsed = None
+                        NodeList = Elapsed = MaxVMSize = AveVMSize = None
                 try:
 
                     JobID,User,JobName,State,Partition,NCPUS,NNodes,CPUTime,\
                         TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,\
-                        NodeList,Elapsed = line.split("|")
+                        NodeList,Elapsed,MaxVMSize,AveVMSize = line.split("|")
                     logger.debug("User %s, JobID %s" % (User,JobID))
                 except ValueError, e:
                     print "unable to parse sacct job text [%r]: %r\n" % (saccttext, e)
@@ -438,7 +438,7 @@ class Slurm(object):
                         remainder = result.group(3)
                         Partition,NCPUS,NNodes,CPUTime, \
                             TotalCPU,UserCPU,SystemCPU,ReqMem,MaxRSS,Start,End,\
-                            NodeList,Elapsed = remainder.split("|")
+                            NodeList,Elapsed,MaxVMSize,AveVMSize = remainder.split("|")
                     else:
                         print "Second attempt to parse sacct job text failed.  Giving up on this one."
                         continue
@@ -543,6 +543,15 @@ class Slurm(object):
                     j.MaxRSS_kB = Slurm.MaxRSS_to_kB(MaxRSS)
                     j.MaxRSS_MB = j.MaxRSS_kB / 1024
 
+                # MaxVMSize
+                j.MaxVMSize = 0
+                if MaxVMSize:
+                    j.MaxVMSize = Slurm.MaxRSS_to_kB(MaxVMSize) / 1024
+                    
+                # AveVMSize
+                j.AveVMSize = 0
+                if AveVMSize:
+                    j.AveVMSize = Slurm.MaxRSS_to_kB(AveVMSize) / 1024
                 
                 jobsteps.append(j)
                     
